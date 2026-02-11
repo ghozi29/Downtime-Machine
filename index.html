@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Maintenance Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+
+    <div class="sidebar">
+      <h2>MENU</h2>
+      <a href="index.html">Dashboard</a>
+      <a href="history.html">History</a>
+    </div>
+
+    <div class="main">
+
+      <div class="header">
+        <h1>MTTR, MTBF, MTTF Dashboard</h1>
+        <p>Area Hormon</p>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi">MTTR<br /><span id="mttr">0</span></div>
+        <div class="kpi">MTBF<br /><span id="mtbf">0</span></div>
+        <div class="kpi">MTTF<br /><span id="mttf">0</span></div>
+        <div class="kpi">Availability<br /><span id="availability">0%</span></div>
+        <div class="kpi">Total Downtime<br /><span id="totalDowntime">0</span></div>
+        <div class="kpi">Breakdown<br /><span id="totalBreakdown">0</span></div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <h3>Breakdown by Category</h3>
+          <canvas id="pieChart"></canvas>
+        </div>
+
+        <div class="card">
+          <h3>Pareto Downtime</h3>
+          <canvas id="paretoChart"></canvas>
+        </div>
+
+        <div class="card">
+          <h3>Downtime per Machine</h3>
+          <canvas id="barChart"></canvas>
+        </div>
+
+        <div class="card">
+          <h3>Worst Machine Ranking</h3>
+          <canvas id="rankChart"></canvas>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+          <h3>Monthly Trend</h3>
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card form-card">
+        <h3>Input Maintenance</h3>
+        <form id="maintenanceForm">
+          <input type="text" id="machineName" placeholder="Nama Mesin" required />
+          <select id="category">
+            <option>Injeksi</option>
+            <option>Implant</option>
+            <option>Tabletting</option>
+          </select>
+          <input type="datetime-local" id="startRepair" required />
+          <input type="datetime-local" id="endRepair" required />
+          <textarea id="note" placeholder="Catatan"></textarea>
+          <button type="submit">Simpan Data</button>
+        </form>
+        <div id="notification" class="notification"></div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
