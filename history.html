@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History Maintenance</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>⚙️ MAINTENANCE</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="dataentry.html">
+          <i class="fas fa-edit"></i> Data Entry
+        </a>
+        <a href="history.html" class="active">
+          <i class="fas fa-history"></i> History
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <select id="areaSelect" class="area-select">
+          <option value="hormon">Area Hormon</option>
+          <option value="produksi1">Area Produksi 1</option>
+          <option value="produksi2">Area Produksi 2</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- HEADER -->
+      <div class="header">
+        <h1>📜 HISTORY MAINTENANCE</h1>
+        <p>Riwayat semua kerusakan mesin dan penggantian komponen</p>
+      </div>
+
+      <!-- FILTER SECTION -->
+      <div class="card filter-card">
+        <div class="filter-header">
+          <h3><i class="fas fa-filter"></i> Filter Data</h3>
+          <button id="resetAllFilters" class="btn-small btn-outline">
+            <i class="fas fa-undo"></i> Reset Semua Filter
+          </button>
+        </div>
+        
+        <div class="filter-options">
+          <div class="filter-group">
+            <label><i class="fas fa-calendar-day"></i> Tanggal Spesifik:</label>
+            <input type="date" id="filterDate" class="filter-input">
+          </div>
+          <div class="filter-group">
+            <label><i class="fas fa-calendar-alt"></i> Bulan:</label>
+            <input type="month" id="filterMonth" class="filter-input">
+          </div>
+          <div class="filter-group">
+            <label><i class="fas fa-calendar"></i> Tahun:</label>
+            <input type="number" id="filterYear" placeholder="2024" class="filter-input" min="2020" max="2030">
+          </div>
+          <div class="filter-group">
+            <label><i class="fas fa-tag"></i> Kategori:</label>
+            <select id="filterCategory" class="filter-input">
+              <option value="">Semua Kategori</option>
+              <option value="Injeksi">Injeksi</option>
+              <option value="Implant">Implant</option>
+              <option value="Tabletting">Tabletting</option>
+              <option value="Packaging">Packaging</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label><i class="fas fa-cog"></i> Nama Mesin:</label>
+            <input type="text" id="filterMachine" placeholder="Cari mesin..." class="filter-input">
+          </div>
+        </div>
+        
+        <div class="filter-actions">
+          <button id="applyFilter" class="btn-primary">
+            <i class="fas fa-search"></i> Terapkan Filter
+          </button>
+          <span id="filterResultCount" class="result-count"></span>
+        </div>
+      </div>
+
+      <!-- TABEL MAINTENANCE -->
+      <div class="card">
+        <div class="filter-header">
+          <h3><i class="fas fa-list"></i> Riwayat Kerusakan Mesin (MTTR/MTBF)</h3>
+          <button id="exportMaintenance" class="btn-small btn-success">
+            <i class="fas fa-file-excel"></i> Export Excel
+          </button>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="history-table" id="maintenanceTable">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Mesin</th>
+                <th>Kategori</th>
+                <th>Operasi Mulai</th>
+                <th>Waktu Rusak</th>
+                <th>Mulai Perbaikan</th>
+                <th>Selesai Perbaikan</th>
+                <th>Response Time</th>
+                <th>Repair Time (MTTR)</th>
+                <th>Operating Time (MTBF)</th>
+                <th>Total Downtime</th>
+                <th>Catatan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="maintenanceTableBody">
+              <tr><td colspan="13" class="text-center">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TABEL KOMPONEN -->
+      <div class="card">
+        <div class="filter-header">
+          <h3><i class="fas fa-microchip"></i> Riwayat Penggantian Komponen (MTTF)</h3>
+          <button id="exportComponents" class="btn-small btn-success">
+            <i class="fas fa-file-excel"></i> Export Excel
+          </button>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Komponen</th>
+                <th>Tanggal Pasang</th>
+                <th>Tanggal Ganti</th>
+                <th>Umur (Jam)</th>
+                <th>MTTF</th>
+                <th>Catatan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="componentTableBody">
+              <tr><td colspan="8" class="text-center">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <p>Memuat data...</p>
+  </div>
+
+  <!-- NOTIFICATION -->
+  <div id="notification" class="notification" style="position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;"></div>
+
+  <!-- EXCEL LIBRARY -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script type="module" src="history.js"></script>
+</body>
+</html>

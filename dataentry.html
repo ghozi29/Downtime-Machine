@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Entry Maintenance</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>⚙️ MAINTENANCE</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="dataentry.html" class="active">
+          <i class="fas fa-edit"></i> Data Entry
+        </a>
+        <a href="history.html">
+          <i class="fas fa-history"></i> History
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <select id="areaSelect" class="area-select">
+          <option value="hormon">Area Hormon</option>
+          <option value="produksi1">Area Produksi 1</option>
+          <option value="produksi2">Area Produksi 2</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- HEADER -->
+      <div class="header">
+        <h1>📝 DATA ENTRY MAINTENANCE</h1>
+        <p>Input data kerusakan mesin (MTTR/MTBF) dan penggantian komponen (MTTF)</p>
+      </div>
+
+      <!-- TABS -->
+      <div class="card">
+        <div class="tabs">
+          <button class="tab-btn active" id="tabMaintenanceBtn">
+            <i class="fas fa-tools"></i> Kerusakan Mesin (MTTR/MTBF)
+          </button>
+          <button class="tab-btn" id="tabComponentBtn">
+            <i class="fas fa-microchip"></i> Komponen (MTTF)
+          </button>
+        </div>
+
+        <!-- TAB MAINTENANCE -->
+        <div id="tabMaintenance" class="tab-content active">
+          <form id="maintenanceForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-cog"></i> Nama Mesin <span class="required">*</span></label>
+                <input type="text" id="machineName" placeholder="Contoh: Super Mixer Yen Chen" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-tag"></i> Kategori <span class="required">*</span></label>
+                <select id="machineCategory" required>
+                  <option value="">-- Pilih Kategori --</option>
+                  <option value="Injeksi">Injeksi</option>
+                  <option value="Implant">Implant</option>
+                  <option value="Tabletting">Tablet Hormon</option>
+                  <option value="Packaging">Packing Hormon</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h4>⏱️ TIMELINE KEJADIAN</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label><i class="fas fa-play"></i> Mulai Operasi <span class="required">*</span></label>
+                  <input type="datetime-local" id="operationStart" required>
+                  <small>Kapan mesin mulai beroperasi setelah perbaikan terakhir</small>
+                </div>
+                <div class="form-group">
+                  <label><i class="fas fa-exclamation-circle"></i> Waktu Rusak <span class="required">*</span></label>
+                  <input type="datetime-local" id="failureStart" required>
+                  <small>Kapan mesin berhenti beroperasi (rusak)</small>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label><i class="fas fa-wrench"></i> Mulai Perbaikan <span class="required">*</span></label>
+                  <input type="datetime-local" id="maintenanceStart" required>
+                  <small>Kapan teknisi mulai memperbaiki</small>
+                </div>
+                <div class="form-group">
+                  <label><i class="fas fa-check"></i> Selesai Perbaikan <span class="required">*</span></label>
+                  <input type="datetime-local" id="maintenanceEnd" required>
+                  <small>Kapan mesin selesai diperbaiki</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label><i class="fas fa-sticky-note"></i> Catatan Perbaikan</label>
+                <textarea id="note" rows="3" placeholder="Jelaskan kerusakan dan tindakan perbaikan..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="reset" class="btn-secondary"><i class="fas fa-undo"></i> Reset</button>
+              <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Simpan Data Mesin</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB KOMPONEN -->
+        <div id="tabComponent" class="tab-content">
+          <form id="componentForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-microchip"></i> Nama Komponen <span class="required">*</span></label>
+                <input type="text" id="componentName" placeholder="Contoh: Bearing, Belt, Sensor" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-calendar-alt"></i> Tanggal Pemasangan <span class="required">*</span></label>
+                <input type="date" id="installDate" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-calendar-times"></i> Tanggal Penggantian <span class="required">*</span></label>
+                <input type="date" id="replacementDate" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-hourglass-half"></i> Total Jam Operasi</label>
+                <input type="number" id="operatingHours" placeholder="Otomatis terisi" readonly>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label><i class="fas fa-sticky-note"></i> Catatan</label>
+                <textarea id="componentNote" rows="2" placeholder="Catatan tentang komponen..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="reset" class="btn-secondary"><i class="fas fa-undo"></i> Reset</button>
+              <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Simpan Komponen</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- INFO CARD -->
+      <div class="card info-card">
+        <h4><i class="fas fa-info-circle"></i> Penjelasan Metrik:</h4>
+        <ul>
+          <li><strong>MTTR (Mean Time To Repair)</strong> - Rata-rata waktu yang dibutuhkan untuk memperbaiki mesin. Dihitung dari Mulai Perbaikan ke Selesai Perbaikan.</li>
+          <li><strong>MTBF (Mean Time Between Failures)</strong> - Rata-rata waktu mesin beroperasi sebelum rusak. Dihitung dari Mulai Operasi ke Waktu Rusak.</li>
+          <li><strong>MTTF (Mean Time To Failure)</strong> - Rata-rata umur komponen yang tidak bisa diperbaiki (harus diganti).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION -->
+  <div id="notification" class="notification" style="position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;"></div>
+
+  <script type="module" src="dataentry.js"></script>
+</body>
+</html>

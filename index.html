@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>⚙️ MAINTENANCE</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="dataentry.html">
+          <i class="fas fa-edit"></i> Data Entry
+        </a>
+        <a href="history.html">
+          <i class="fas fa-history"></i> History
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <select id="areaSelect" class="area-select">
+          <option value="hormon">Area Hormon</option>
+          <option value="produksi1">Area Xxx</option>
+          <option value="produksi2">Area Xxx</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- HEADER -->
+      <div class="header">
+        <h1>📊 DASHBOARD MAINTENANCE</h1>
+        <p>MTTR (Mean Time To Repair) · MTBF (Mean Time Between Failures) · MTTF (Mean Time To Failure)</p>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon blue"><i class="fas fa-tools"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-label">MTTR</span>
+            <span class="kpi-value" id="mttr">0</span>
+            <small>Rata-rata waktu perbaikan</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green"><i class="fas fa-clock"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-label">MTBF</span>
+            <span class="kpi-value" id="mtbf">0</span>
+            <small>Rata-rata waktu antar kerusakan</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon orange"><i class="fas fa-hourglass-end"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-label">MTTF</span>
+            <span class="kpi-value" id="mttf">0</span>
+            <small>Rata-rata umur komponen</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon purple"><i class="fas fa-check-circle"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-label">Availability</span>
+            <span class="kpi-value" id="availability">0%</span>
+            <small>Ketersediaan mesin</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red"><i class="fas fa-hourglass-half"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-label">Total Downtime</span>
+            <span class="kpi-value" id="totalDowntime">0</span>
+            <small>Jam mesin mati</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon dark"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-label">Total Breakdown</span>
+            <span class="kpi-value" id="totalBreakdown">0</span>
+            <small>Jumlah kejadian rusak</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTER PERIODE -->
+      <div class="filter-row">
+        <div class="card filter-card">
+          <div class="filter-header">
+            <h3><i class="fas fa-calendar-alt"></i> Filter Periode</h3>
+          </div>
+          <div class="filter-options">
+            <div class="filter-group">
+              <label>Periode:</label>
+              <select id="periodFilter" class="filter-input">
+                <option value="today">Hari Ini</option>
+                <option value="week">Minggu Ini</option>
+                <option value="month" selected>Bulan Ini</option>
+                <option value="3months">3 Bulan</option>
+                <option value="6months">6 Bulan</option>
+                <option value="year">Tahun Ini</option>
+                <option value="all">Semua Data</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="applyPeriodFilter" class="btn-primary">
+                <i class="fas fa-sync-alt"></i> Update Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="chart-grid">
+        <div class="card chart-card">
+          <h3><i class="fas fa-chart-pie"></i> Breakdown by Category</h3>
+          <canvas id="pieChart"></canvas>
+        </div>
+        <div class="card chart-card">
+          <h3><i class="fas fa-chart-bar"></i> Downtime per Machine</h3>
+          <canvas id="barChart"></canvas>
+        </div>
+        <div class="card chart-card">
+          <h3><i class="fas fa-chart-line"></i> Trend Downtime Bulanan</h3>
+          <canvas id="lineChart"></canvas>
+        </div>
+        <div class="card chart-card">
+          <h3><i class="fas fa-trophy"></i> Mesin Terburuk</h3>
+          <canvas id="rankChart"></canvas>
+        </div>
+      </div>
+
+      <!-- TABEL RINGKASAN -->
+      <div class="card">
+        <h3><i class="fas fa-microchip"></i> Komponen dengan MTTF (Tidak Bisa Diperbaiki)</h3>
+        <div class="table-responsive">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Komponen</th>
+                <th>Jumlah Data</th>
+                <th>Rata-rata Umur (MTTF)</th>
+                <th>Total Jam Operasi</th>
+              </tr>
+            </thead>
+            <tbody id="mttfTableBody">
+              <tr><td colspan="4" class="text-center">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <p>Memuat data...</p>
+  </div>
+
+  <!-- NOTIFICATION -->
+  <div id="notification" class="notification" style="position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;"></div>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
