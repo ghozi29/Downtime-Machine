@@ -1,92 +1,84 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pengaturan Dashboard</title>
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-    h1 { margin-bottom: 20px; }
-    .section { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-    label { display: block; margin: 10px 0 5px; }
-    input, select, button { padding: 8px; width: 100%; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc; }
-    button { cursor: pointer; background-color: #4caf50; color: white; border: none; }
-    button:hover { background-color: #45a049; }
-    .notification { display: none; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
-    .notification.success { background-color: #4caf50; color: #fff; }
-    .notification.error { background-color: #f44336; color: #fff; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pengaturan</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  body.light { background: #f5f5f5; color: #222; }
+  body.dark { background: #222; color: #f5f5f5; }
+  .container { max-width: 800px; margin: 2rem auto; padding: 1rem; }
+  .card { background: #fff; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+  .dark .card { background: #333; }
+  label { display: block; margin-top: 0.5rem; }
+  input, select { width: 100%; padding: 0.5rem; margin-top: 0.25rem; }
+  button { margin-top: 0.5rem; padding: 0.5rem 1rem; }
+  .notification { display: none; padding: 0.5rem; margin-top: 0.5rem; border-radius: 4px; }
+  .notification.success { background: #4caf50; color: #fff; }
+  .notification.error { background: #f44336; color: #fff; }
+</style>
 </head>
-<body>
+<body class="light">
+<div class="container">
+  <h1>Pengaturan</h1>
 
-<h1>Pengaturan Dashboard</h1>
+  <!-- MODE GELAP / TERANG -->
+  <div class="card">
+    <h3>Mode Tampilan</h3>
+    <label>
+      Pilih mode:
+      <select id="themeSelect">
+        <option value="light">Terang</option>
+        <option value="dark">Gelap</option>
+      </select>
+    </label>
+  </div>
 
-<div id="notification" class="notification"></div>
+  <!-- NOTIFIKASI EMAIL -->
+  <div class="card">
+    <h3>Notifikasi Email</h3>
+    <label>
+      Email penerima:
+      <input type="email" id="notifEmail" placeholder="contoh: admin@example.com">
+    </label>
+    <button id="saveEmailBtn">Simpan Email</button>
+    <button id="testEmailBtn">Kirim Test Email</button>
+  </div>
 
-<!-- 1. Notifikasi WA -->
-<div class="section">
-  <h2>Notifikasi WhatsApp</h2>
-  <label for="waNumber">Nomor WhatsApp (+62 ...)</label>
-  <input type="text" id="waNumber" placeholder="+6281234567890">
-  
-  <label for="waFrequency">Frekuensi Notifikasi</label>
-  <select id="waFrequency">
-    <option value="realtime">Realtime</option>
-    <option value="daily">Harian</option>
-    <option value="weekly">Mingguan</option>
-  </select>
-  
-  <label for="waTypes">Jenis Notifikasi</label>
-  <select id="waTypes" multiple>
-    <option value="new_record">Data Baru</option>
-    <option value="deleted_record">Data Dihapus</option>
-    <option value="kpi_update">Update KPI</option>
-  </select>
-  
-  <button id="saveWANotification">Simpan Notifikasi WA</button>
+  <!-- PREFERENSI DASHBOARD -->
+  <div class="card">
+    <h3>Preferensi Dashboard</h3>
+    <label>
+      Chart default:
+      <select id="defaultChart">
+        <option value="line">Line Chart</option>
+        <option value="bar">Bar Chart</option>
+        <option value="pie">Pie Chart</option>
+      </select>
+    </label>
+    <label>
+      Periode default:
+      <select id="defaultPeriod">
+        <option value="today">Hari ini</option>
+        <option value="week">Minggu ini</option>
+        <option value="month">Bulan ini</option>
+        <option value="3months">3 Bulan</option>
+        <option value="6months">6 Bulan</option>
+        <option value="year">Tahun ini</option>
+      </select>
+    </label>
+  </div>
+
+  <!-- RESET PENGATURAN -->
+  <div class="card">
+    <h3>Reset Pengaturan</h3>
+    <button id="resetSettingsBtn">Reset ke Default</button>
+  </div>
+
+  <div id="notification" class="notification"></div>
 </div>
 
-<!-- 2. Tema Dashboard -->
-<div class="section">
-  <h2>Tema Dashboard</h2>
-  <label for="themeSelect">Pilih Tema</label>
-  <select id="themeSelect">
-    <option value="light">Terang</option>
-    <option value="dark">Gelap</option>
-  </select>
-  <button id="saveTheme">Simpan Tema</button>
-</div>
-
-<!-- 3. KPI & Chart -->
-<div class="section">
-  <h2>KPI & Chart</h2>
-  <label><input type="checkbox" id="showMTTR" checked> Tampilkan MTTR</label>
-  <label><input type="checkbox" id="showMTBF" checked> Tampilkan MTBF</label>
-  <label><input type="checkbox" id="showMTTF" checked> Tampilkan MTTF</label>
-  <label><input type="checkbox" id="showAvailability" checked> Tampilkan Availability</label>
-  <button id="saveKPISettings">Simpan Pengaturan KPI</button>
-</div>
-
-<!-- 4. Alert Threshold -->
-<div class="section">
-  <h2>Alert Threshold</h2>
-  <label for="downtimeThreshold">Downtime > (Jam)</label>
-  <input type="number" id="downtimeThreshold" min="1" placeholder="10">
-  
-  <label for="mttfThreshold">MTTF < (Jam)</label>
-  <input type="number" id="mttfThreshold" min="1" placeholder="100">
-  
-  <button id="saveAlertThreshold">Simpan Alert Threshold</button>
-</div>
-
-<!-- 5. Backup & Export -->
-<div class="section">
-  <h2>Backup & Export Data</h2>
-  <button id="exportMaintenance">Export Data Maintenance</button>
-  <button id="exportComponents">Export Data Komponen</button>
-</div>
-
-<script type="module" src="./settings.js"></script>
+<script type="module" src="settings.js"></script>
 </body>
 </html>
