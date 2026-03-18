@@ -440,6 +440,94 @@ function showLoading(show) {
   }
 }
 
+function renderParetoChart() {
+  const ctx = document.getElementById("paretoChart")?.getContext("2d");
+  if (!ctx) return;
+
+  // Hitung jumlah per kategori
+  const counts = {};
+  allMaintenanceRecords.forEach(record => {
+    const key = record.category || "Lainnya";
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  // Sort descending
+  const sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  // Hitung cumulative %
+  const total = sortedEntries.reduce((sum, [, count]) => sum + count, 0);
+  let cumulative = 0;
+  const labels = [];
+  const values = [];
+  const cumulativePercent = [];
+
+  sortedEntries.forEach(([key, count]) => {
+    labels.push(key);
+    values.push(count);
+    cumulative += count;
+    cumulativePercent.push(((cumulative / total) * 100).toFixed(1));
+  });
+
+  // Destroy previous chart if exists
+  if (charts.pareto) charts.pareto.destroy();
+
+  charts.pareto = new Chart(ctx, {
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Jumlah Kejadian',
+          data: values,
+          backgroundColor: '#4caf50',
+          yAxisID: 'y',
+        },
+        {
+          type: 'line',
+          label: 'Persentase Kumulatif (%)',
+          data: cumulativePercent,
+          borderColor: '#f44336',
+          borderWidth: 2,
+          fill: false,
+          yAxisID: 'y1',
+          tension: 0.3,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y: {
+          type: 'linear',
+          position: 'left',
+          title: { display: true, text: 'Jumlah Kejadian' },
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          min: 0,
+          max: 100,
+          title: { display: true, text: 'Persentase Kumulatif (%)' },
+          grid: { drawOnChartArea: false },
+        }
+      },
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              if (context.dataset.type === 'line') {
+                return `Kumulatif: ${context.formattedValue}%`;
+              }
+              return `Jumlah: ${context.formattedValue}`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
 // Export functions to window for HTML onclick
 window.showTab = function(tabName) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
