@@ -636,6 +636,14 @@ body {
   margin-bottom: 15px;
 }
 
+.watermark {
+  font-size: 11px;
+  color: #aaa;
+  text-align: center;
+  margin-bottom: 10px;
+  opacity: 0.7;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
