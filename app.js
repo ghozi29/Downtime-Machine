@@ -1,5 +1,5 @@
 import { db } from "./firebase-config.js";
-import { ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 // ================= DEBUG FIREBASE =================
 console.log("Mencoba koneksi ke Firebase...");
@@ -13,6 +13,7 @@ let allMaintenanceRecords = [];
 let allComponentRecords = [];
 let currentArea = "hormon";
 let charts = {};
+let lastCount = null; // anti spam notif
 
 // ================= INIT =================
 document.addEventListener('DOMContentLoaded', () => {
@@ -49,14 +50,15 @@ function loadAllData() {
   }, { onlyOnce: true });
 }
 
-// ================= FILTER HELPER =================
+// ================= FILTER =================
 function getFilteredRecords() {
   const periodFilter = document.getElementById("periodFilter")?.value || "month";
   const { startDate, endDate } = getPeriodDates(periodFilter);
 
   return allMaintenanceRecords.filter(record => {
-    if (!record.failureStart) return false;
-    const d = new Date(record.failureStart);
+    const dateField = record.failureStart || record.createdAt;
+    if (!dateField) return false;
+    const d = new Date(dateField);
     return d >= startDate && d <= endDate;
   });
 }
@@ -64,8 +66,15 @@ function getFilteredRecords() {
 // ================= KPI =================
 function computeAllKPIs() {
   const data = getFilteredRecords();
+  const count = data.length;
 
-  if (data.length === 0) {
+  // 🔥 NOTIF SIMPLE (sekali lewat)
+  if (lastCount !== count) {
+    showNotifSimple(`Data: ${count}`);
+    lastCount = count;
+  }
+
+  if (count === 0) {
     document.getElementById("mttr").innerText = "0 Jam";
     document.getElementById("mtbf").innerText = "0 Jam";
     document.getElementById("availability").innerText = "0%";
@@ -91,10 +100,9 @@ function computeAllKPIs() {
     }
   });
 
-  const count = data.length;
   const MTTR = totalRepair / count;
   const MTBF = totalOperating / count;
-  const availability = ((totalOperating) / (totalOperating + totalDowntime)) * 100;
+  const availability = (totalOperating / (totalOperating + totalDowntime)) * 100;
 
   document.getElementById("mttr").innerText = MTTR.toFixed(2) + " Jam";
   document.getElementById("mtbf").innerText = MTBF.toFixed(2) + " Jam";
@@ -108,7 +116,7 @@ function renderAllCharts() {
   renderPieChart();
   renderBarChart();
   renderLineChart();
-  renderParetoChart(); // 🔥 FIXED
+  renderParetoChart();
 }
 
 // ================= PIE =================
@@ -149,7 +157,7 @@ function renderBarChart() {
   const machines = {};
   data.forEach(r => {
     const m = r.machineName || "Unknown";
-    machines[m] = (machines[m] || 0) + (r.downtimeHours || 0);
+    machines[m] = (machines[m] || 0) + (r.downtimeTotal || r.downtimeHours || 0);
   });
 
   if (charts.bar) charts.bar.destroy();
@@ -175,9 +183,9 @@ function renderLineChart() {
 
   const monthly = {};
   data.forEach(r => {
-    const d = new Date(r.failureStart);
+    const d = new Date(r.failureStart || r.createdAt);
     const key = `${d.getFullYear()}-${d.getMonth()+1}`;
-    monthly[key] = (monthly[key] || 0) + (r.downtimeHours || 0);
+    monthly[key] = (monthly[key] || 0) + (r.downtimeTotal || r.downtimeHours || 0);
   });
 
   if (charts.line) charts.line.destroy();
@@ -193,21 +201,15 @@ function renderLineChart() {
   });
 }
 
-// ================= 🔥 PARETO FIX =================
+// ================= PARETO =================
 function renderParetoChart() {
   const ctx = document.getElementById("paretoChart")?.getContext("2d");
   if (!ctx) return;
 
   const data = getFilteredRecords();
-  console.log("Pareto data:", data);
-
-  if (data.length === 0) {
-    console.warn("Pareto kosong - cek filter periode");
-    return;
-  }
+  if (data.length === 0) return;
 
   const counts = {};
-
   data.forEach(r => {
     const key = r.category || "Lainnya";
     counts[key] = (counts[key] || 0) + 1;
@@ -236,7 +238,7 @@ function renderParetoChart() {
       datasets: [
         {
           type: 'bar',
-          label: 'Jumlah Breakdown',
+          label: 'Jumlah',
           data: values,
           backgroundColor: '#4caf50'
         },
@@ -262,4 +264,17 @@ function renderParetoChart() {
 function showLoading(show) {
   const el = document.getElementById("loadingOverlay");
   if (el) el.style.display = show ? "flex" : "none";
+}
+
+// 🔥 NOTIF SUPER RINGAN
+function showNotifSimple(text) {
+  const el = document.getElementById("notification");
+  if (!el) return;
+
+  el.innerText = text;
+  el.style.display = "block";
+
+  setTimeout(() => {
+    el.style.display = "none";
+  }, 2000);
 }
