@@ -202,31 +202,30 @@ function renderParetoChart() {
   console.log("Pareto data:", data);
 
   if (data.length === 0) {
-    console.warn("Pareto kosong");
+    console.warn("Pareto kosong - cek filter periode");
     return;
   }
 
   const counts = {};
+
   data.forEach(r => {
     const key = r.category || "Lainnya";
     counts[key] = (counts[key] || 0) + 1;
   });
 
-  console.log("Counts:", counts);
-
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const total = sorted.reduce((sum, [, v]) => sum + v, 0);
 
-  let cum = 0;
+  let cumulative = 0;
   const labels = [];
   const values = [];
-  const cumPercent = [];
+  const cumulativePercent = [];
 
   sorted.forEach(([k, v]) => {
     labels.push(k);
     values.push(v);
-    cum += v;
-    cumPercent.push((cum / total) * 100);
+    cumulative += v;
+    cumulativePercent.push((cumulative / total) * 100);
   });
 
   if (charts.pareto) charts.pareto.destroy();
@@ -237,22 +236,20 @@ function renderParetoChart() {
       datasets: [
         {
           type: 'bar',
-          label: 'Jumlah',
+          label: 'Jumlah Breakdown',
           data: values,
-          backgroundColor: '#4caf50',
-          yAxisID: 'y'
+          backgroundColor: '#4caf50'
         },
         {
           type: 'line',
           label: 'Kumulatif %',
-          data: cumPercent,
+          data: cumulativePercent,
           borderColor: '#f44336',
           yAxisID: 'y1'
         }
       ]
     },
     options: {
-      responsive: true,
       scales: {
         y: { position: 'left' },
         y1: { position: 'right', min: 0, max: 100 }
