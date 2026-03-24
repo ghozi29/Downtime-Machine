@@ -65,7 +65,7 @@ async function deleteData(path) {
   }
 }
 
-// Increment field
+// Increment field (untuk summary/workload)
 function incrementValue(by = 1) {
   return increment(by);
 }
