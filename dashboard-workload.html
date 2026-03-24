@@ -5,23 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Workload Teknisi</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-
 <div class="container">
-  <header>
-    <h1>👨‍🔧 Dashboard Workload Teknisi</h1>
-    <p>Monitoring beban kerja teknisi per bulan</p>
-  </header>
-
-  <!-- FILTER BULAN -->
-  <div class="filter">
-    <label for="monthFilter">Pilih Bulan:</label>
-    <input type="month" id="monthFilter">
+  
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>⚙️ MAINTENANCE</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="dataentry.html"><i class="fas fa-edit"></i> Data Entry</a>
+      <a href="history.html"><i class="fas fa-history"></i> History</a>
+      <a href="workload.html" class="active"><i class="fas fa-users"></i> Workload Teknisi</a>
+      <a href="assistant.html"><i class="fas fa-robot"></i> AI Assistant</a>
+    </nav>
   </div>
 
-  <!-- GRID TEKNISI -->
-  <div id="workloadContainer" class="grid"></div>
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <div class="header">
+      <h1>👨‍🔧 Dashboard Workload Teknisi</h1>
+      <p>Monitoring beban kerja teknisi per bulan</p>
+    </div>
+
+    <!-- FILTER BULAN -->
+    <div class="card">
+      <label for="monthFilter">Pilih Bulan:</label>
+      <input type="month" id="monthFilter">
+    </div>
+
+    <!-- GRID TEKNISI -->
+    <div id="workloadContainer" class="grid"></div>
+  </div>
+
 </div>
 
 <script type="module" src="workload.js"></script>
