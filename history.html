@@ -3,172 +3,139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>History Maintenance</title>
+  <title>Data Entry Maintenance</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
   <div class="container">
-     <!-- SIDEBAR -->
+    <!-- SIDEBAR -->
     <div class="sidebar">
-      <div class="sidebar-header">
-        <h2>⚙️ MAINTENANCE</h2>
-      </div>
+      <div class="sidebar-header"><h2>⚙️ MAINTENANCE</h2></div>
       <nav class="sidebar-nav">
-        <a href="index.html" >
-          <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a href="dataentry.html">
-          <i class="fas fa-edit"></i> Data Entry
-        </a>
-        <a href="history.html" class="active">
-          <i class="fas fa-history"></i> History
-        </a>
-        <a href="assistant.html">
-           <i class="fas fa-robot"></i> AI Assistant
-        </a>
+        <a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard Mesin</a>
+        <a href="dataentry.html" class="active"><i class="fas fa-edit"></i> Data Entry</a>
+        <a href="history.html"><i class="fas fa-history"></i> History</a>
+        <a href="assistant.html"><i class="fas fa-robot"></i> AI Assistant</a>
       </nav>
-     <!-- <div class="sidebar-footer">
-        <select id="areaSelect" class="area-select">
-          <option value="hormon">Area Hormon</option>
-          <option value="produksi1">Area Produksi 1</option>
-          <option value="produksi2">Area Produksi 2</option>
-        </select>
-      </div>-->
     </div>
 
     <div class="main">
-      <!-- HEADER -->
-      <div class="header">
-        <h1>📜 HISTORY MAINTENANCE</h1>
-        <p>Riwayat semua kerusakan mesin dan penggantian komponen</p>
-      </div>
+      <header class="header">
+        <h1>📝 DATA ENTRY MAINTENANCE</h1>
+        <p>Input data kerusakan mesin (MTTR/MTBF) dan penggantian komponen (MTTF)</p>
+      </header>
 
-      <!-- FILTER SECTION -->
-      <div class="card filter-card">
-        <div class="filter-header">
-          <h3><i class="fas fa-filter"></i> Filter Data</h3>
-          <button id="resetAllFilters" class="btn-small btn-outline">
-            <i class="fas fa-undo"></i> Reset Semua Filter
-          </button>
-        </div>
-        
-        <div class="filter-options">
-          <div class="filter-group">
-            <label><i class="fas fa-calendar-day"></i> Tanggal Spesifik:</label>
-            <input type="date" id="filterDate" class="filter-input">
-          </div>
-          <div class="filter-group">
-            <label><i class="fas fa-calendar-alt"></i> Bulan:</label>
-            <input type="month" id="filterMonth" class="filter-input">
-          </div>
-          <div class="filter-group">
-            <label><i class="fas fa-calendar"></i> Tahun:</label>
-            <input type="number" id="filterYear" placeholder="2024" class="filter-input" min="2020" max="2030">
-          </div>
-          <div class="filter-group">
-            <label><i class="fas fa-tag"></i> Area:</label>
-            <select id="filterCategory" class="filter-input">
-               <option value="">-- Pilih Area --</option>
-  <option value="Injeksi">Injeksi</option>
-  <option value="Implant">Implant</option>
-  <option value="Tablet Hormon">Tablet Hormon</option>
-  <option value="Tablet Non Hormon">Tablet Non Hormon</option>
-  <option value="QC">QC</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label><i class="fas fa-cog"></i> Nama Mesin:</label>
-            <input type="text" id="filterMachine" placeholder="Cari mesin..." class="filter-input">
-          </div>
-        </div>
-        
-        <div class="filter-actions">
-          <button id="applyFilter" class="btn-primary">
-            <i class="fas fa-search"></i> Terapkan Filter
-          </button>
-          <span id="filterResultCount" class="result-count"></span>
-        </div>
-      </div>
-
-      <!-- TABEL MAINTENANCE -->
       <div class="card">
-        <div class="filter-header">
-          <h3><i class="fas fa-list"></i> Riwayat Kerusakan Mesin (MTTR/MTBF)</h3>
-          <button id="exportMaintenance" class="btn-small btn-success">
-            <i class="fas fa-file-excel"></i> Export Excel
-          </button>
+        <div class="tabs">
+          <button class="tab-btn active" id="tabMaintenanceBtn"><i class="fas fa-tools"></i> Kerusakan Mesin</button>
+          <button class="tab-btn" id="tabComponentBtn"><i class="fas fa-microchip"></i> Komponen</button>
         </div>
-        
-        <div class="table-responsive">
-          <table class="history-table" id="maintenanceTable">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Mesin</th>
-                <th>Kategori</th>
-                <th>Operasi Mulai</th>
-                <th>Waktu Rusak</th>
-                <th>Mulai Perbaikan</th>
-                <th>Selesai Perbaikan</th>
-                <th>Response Time</th>
-                <th>Repair Time (MTTR)</th>
-                <th>Operating Time (MTBF)</th>
-                <th>Total Downtime</th>
-                <th>Catatan</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="maintenanceTableBody">
-              <tr><td colspan="13" class="text-center">Memuat data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <!-- TABEL KOMPONEN -->
-      <div class="card">
-        <div class="filter-header">
-          <h3><i class="fas fa-microchip"></i> Riwayat Penggantian Komponen (MTTF)</h3>
-          <button id="exportComponents" class="btn-small btn-success">
-            <i class="fas fa-file-excel"></i> Export Excel
-          </button>
+        <!-- TAB MAINTENANCE -->
+        <div id="tabMaintenance" class="tab-content active">
+          <form id="maintenanceForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nama Mesin *</label>
+                <input type="text" id="machineName" required>
+              </div>
+              <div class="form-group">
+                <label>Area *</label>
+                <select id="machineCategory" required>
+                  <option value="">-- Pilih Area --</option>
+                  <option value="Injeksi">Injeksi</option>
+                  <option value="Implant">Implant</option>
+                  <option value="Tablet Hormon">Tablet Hormon</option>
+                  <option value="Tablet Non Hormon">Tablet Non Hormon</option>
+                  <option value="QC">QC</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h4>⏱️ TIMELINE</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Mulai Operasi *</label>
+                  <input type="datetime-local" id="operationStart" required>
+                </div>
+                <div class="form-group">
+                  <label>Waktu Rusak *</label>
+                  <input type="datetime-local" id="failureStart" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Mulai Perbaikan *</label>
+                  <input type="datetime-local" id="maintenanceStart" required>
+                </div>
+                <div class="form-group">
+                  <label>Selesai Perbaikan *</label>
+                  <input type="datetime-local" id="maintenanceEnd" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label>Personil Perbaikan *</label>
+                <select id="technicians" multiple required style="height:120px;">
+                  <option value="Maman Sukmana">Maman Sukmana</option>
+                  <option value="Anto Istanto">Anto Istanto</option>
+                  <option value="Bahtiar">Bahtiar</option>
+                  <option value="Hatip">Hatip</option>
+                  <option value="Slamet Riyanto">Slamet Riyanto</option>
+                  <option value="Imron">Imron</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label>Catatan Perbaikan</label>
+                <textarea id="note" rows="3"></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="reset">Reset</button>
+              <button type="submit">Simpan Data Mesin</button>
+            </div>
+          </form>
         </div>
-        
-        <div class="table-responsive">
-          <table class="history-table">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Komponen</th>
-                <th>Tanggal Pasang</th>
-                <th>Tanggal Ganti</th>
-                <th>Umur (Jam)</th>
-                <th>MTTF</th>
-                <th>Catatan</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="componentTableBody">
-              <tr><td colspan="8" class="text-center">Memuat data...</td></tr>
-            </tbody>
-          </table>
+
+        <!-- TAB COMPONENT -->
+        <div id="tabComponent" class="tab-content">
+          <form id="componentForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nama Komponen *</label>
+                <input type="text" id="componentName" required>
+              </div>
+              <div class="form-group">
+                <label>Tanggal Pemasangan *</label>
+                <input type="date" id="installDate" required>
+              </div>
+              <div class="form-group">
+                <label>Tanggal Penggantian *</label>
+                <input type="date" id="replacementDate" required>
+              </div>
+              <div class="form-group">
+                <label>Total Jam Operasi</label>
+                <input type="number" id="operatingHours" readonly>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="reset">Reset</button>
+              <button type="submit">Simpan Komponen</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- LOADING OVERLAY -->
-  <div id="loadingOverlay" class="loading-overlay" style="display:none;">
-    <div class="spinner"></div>
-    <p>Memuat data...</p>
-  </div>
-
-  <!-- NOTIFICATION -->
-  <div id="notification" class="notification" style="position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;"></div>
-
-  <!-- EXCEL LIBRARY -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="history.js"></script>
+  <script type="module" src="dataentry.js"></script>
 </body>
 </html>
