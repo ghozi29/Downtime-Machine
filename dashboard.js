@@ -1,20 +1,22 @@
-import { db, ref, getData } from "./firebase-config.js";
+import { getData } from "./firebase-config.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const areaSelect = document.getElementById("areaSelect");
   if (!areaSelect) return;
 
-  areaSelect.addEventListener("change", () => {
-    loadDashboard(areaSelect.value);
-  });
-
-  // load default area
+  // Load dashboard awal
   await loadDashboard(areaSelect.value);
+
+  // Ganti area
+  areaSelect.addEventListener("change", async () => {
+    await loadDashboard(areaSelect.value);
+  });
 });
 
 async function loadDashboard(area) {
   showLoading(true);
   try {
+    // Ambil data records dan komponen
     const records = await getData(`area/${area}/records`);
     const components = await getData(`area/${area}/components`);
 
@@ -22,16 +24,24 @@ async function loadDashboard(area) {
     const componentList = components ? Object.values(components) : [];
 
     // ===== MTTR =====
-    const mttr = recordList.length > 0 ? recordList.reduce((acc, r) => acc + r.repairTime, 0) / recordList.length : 0;
+    const mttr = recordList.length > 0
+      ? recordList.reduce((acc, r) => acc + (r.repairTime || 0), 0) / recordList.length
+      : 0;
     document.getElementById("mttr").innerText = mttr.toFixed(2);
 
     // ===== MTBF =====
-    const mtbf = recordList.length > 1 ? recordList.reduce((acc, r, i, arr) => {
-      if (i === 0) return 0;
-      const prevEnd = new Date(arr[i - 1].maintenanceEnd);
-      const currStart = new Date(r.operationStart);
-      return acc + (currStart - prevEnd) / 3600000;
-    }, 0) / (recordList.length - 1) : 0;
+    const sortedRecords = recordList
+      .map(r => ({ opStart: new Date(r.operationStart), failStart: new Date(r.failureStart) }))
+      .sort((a, b) => a.opStart - b.opStart);
+
+    let mtbf = 0;
+    if (sortedRecords.length > 1) {
+      let sum = 0;
+      for (let i = 1; i < sortedRecords.length; i++) {
+        sum += (sortedRecords[i].opStart - sortedRecords[i - 1].failStart) / 3600000; // jam
+      }
+      mtbf = sum / (sortedRecords.length - 1);
+    }
     document.getElementById("mtbf").innerText = mtbf.toFixed(2);
 
     // ===== Total Downtime =====
@@ -43,8 +53,7 @@ async function loadDashboard(area) {
     document.getElementById("totalDowntime").innerText = totalDowntime.toFixed(2);
 
     // ===== Total Breakdown =====
-    const totalBreakdown = recordList.length;
-    document.getElementById("totalBreakdown").innerText = totalBreakdown;
+    document.getElementById("totalBreakdown").innerText = recordList.length;
 
     // ===== Availability =====
     const totalOperating = recordList.reduce((acc, r) => {
@@ -52,7 +61,9 @@ async function loadDashboard(area) {
       const fail = new Date(r.failureStart);
       return acc + (fail - opStart) / 3600000;
     }, 0);
-    const availability = totalOperating + totalDowntime > 0 ? totalOperating / (totalOperating + totalDowntime) * 100 : 0;
+    const availability = totalOperating + totalDowntime > 0
+      ? (totalOperating / (totalOperating + totalDowntime)) * 100
+      : 0;
     document.getElementById("availability").innerText = availability.toFixed(1) + "%";
 
     // ===== MTTF Komponen =====
@@ -73,7 +84,6 @@ async function loadDashboard(area) {
       });
     }
 
-    // TODO: chart update bisa ditambahkan nanti
   } catch (err) {
     console.error(err);
     alert("Gagal memuat dashboard: " + err.message);
