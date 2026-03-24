@@ -733,3 +733,47 @@ body {
 .info-card li {
   margin-bottom: 5px;
 }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.card-tech {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.card-tech img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.card-tech h3 {
+  margin-top: 10px;
+  font-size: 18px;
+}
+
+.status {
+  margin-top: 10px;
+  padding: 5px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: white;
+}
+
+.green { background: #2ecc71; }
+.yellow { background: #f1c40f; }
+.red { background: #e74c3c; }
+
+.metric {
+  margin-top: 5px;
+  font-size: 14px;
+}
