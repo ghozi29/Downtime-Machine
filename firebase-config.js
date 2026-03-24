@@ -1,24 +1,122 @@
-// Gunakan CDN yang sudah terbukti stabil
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, remove, update, increment} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Mesin</title>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCdjG0w6QOMdYzWsqF_QZKl7yHJOrcyjbQ",
-  authDomain: "iotcamar.firebaseapp.com",
-  databaseURL: "https://iotcamar-default-rtdb.firebaseio.com",
-  projectId: "iotcamar",
-  storageBucket: "iotcamar.firebasestorage.app",
-  messagingSenderId: "878187768527",
-  appId: "1:878187768527:web:e5c6412e811b15251825ba",
-  measurementId: "G-V40ZQ4Y9RS"
-};
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
 
-// Initialize Firebase
-console.log("Initializing Firebase...");
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-console.log("Firebase initialized:", app.name);
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-// Export semua yang dibutuhkan
-export { db, ref, push, onValue, remove, set, update, increment };
-export default db;
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header" style="color:#27ae60;">
+        <h2>⚙️ MAINTENANCE</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="dataentry.html"><i class="fas fa-edit"></i> Data Entry</a>
+        <a href="history.html"><i class="fas fa-history"></i> History</a>
+        <a href="assistant.html"><i class="fas fa-robot"></i> AI Assistant</a>
+      </nav>
+      <div class="sidebar-footer">
+        <select id="areaSelect" class="area-select">
+          <option value="hormon">Area Hormon</option>
+          <option value="injeksi">Area Injeksi</option>
+          <option value="tablet-hormon">Tablet Hormon</option>
+          <option value="tablet-non-hormon">Tablet Non Hormon</option>
+          <option value="qc">QC</option>
+        </select>
+      </div>
+      <div class="footer">Web by @ME V-1.1.27</div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <header class="header">
+        <h1>📊 DASHBOARD MESIN</h1>
+        <p>MTTR · MTBF · Availability · Total Downtime · Total Breakdown</p>
+      </header>
+
+      <!-- KPI -->
+      <section class="kpi-row">
+        <div class="kpi-card"><div class="kpi-icon blue"><i class="fas fa-tools"></i></div><div><span class="kpi-label">MTTR</span><span class="kpi-value" id="mttr">0</span><small>Rata-rata waktu perbaikan</small></div></div>
+        <div class="kpi-card"><div class="kpi-icon green"><i class="fas fa-clock"></i></div><div><span class="kpi-label">MTBF</span><span class="kpi-value" id="mtbf">0</span><small>Rata-rata waktu antar kerusakan</small></div></div>
+        <div class="kpi-card"><div class="kpi-icon orange"><i class="fas fa-hourglass-end"></i></div><div><span class="kpi-label">MTTF</span><span class="kpi-value" id="mttf">0</span><small>Rata-rata umur komponen</small></div></div>
+        <div class="kpi-card"><div class="kpi-icon purple"><i class="fas fa-check-circle"></i></div><div><span class="kpi-label">Availability</span><span class="kpi-value" id="availability">0%</span><small>Ketersediaan mesin</small></div></div>
+        <div class="kpi-card"><div class="kpi-icon red"><i class="fas fa-hourglass-half"></i></div><div><span class="kpi-label">Total Downtime</span><span class="kpi-value" id="totalDowntime">0</span><small>Jam mesin mati</small></div></div>
+        <div class="kpi-card"><div class="kpi-icon dark"><i class="fas fa-exclamation-triangle"></i></div><div><span class="kpi-label">Total Breakdown</span><span class="kpi-value" id="totalBreakdown">0</span><small>Jumlah kejadian rusak</small></div></div>
+      </section>
+
+      <!-- FILTER PERIODE -->
+      <section class="filter-row">
+        <div class="card filter-card">
+          <h3><i class="fas fa-calendar-alt"></i> Filter Periode</h3>
+          <div class="filter-options">
+            <div class="filter-group">
+              <label>Periode:</label>
+              <select id="periodFilter" class="filter-input">
+                <option value="today">Hari Ini</option>
+                <option value="week">Minggu Ini</option>
+                <option value="month" selected>Bulan Ini</option>
+                <option value="3months">3 Bulan</option>
+                <option value="6months">6 Bulan</option>
+                <option value="year">Tahun Ini</option>
+                <option value="all">Semua Data</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <button id="applyPeriodFilter" class="btn-primary"><i class="fas fa-sync-alt"></i> Update Dashboard</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHARTS -->
+      <section class="chart-grid">
+        <div class="card chart-card"><h3><i class="fas fa-chart-pie"></i> Breakdown by Category</h3><canvas id="pieChart"></canvas></div>
+        <div class="card chart-card"><h3><i class="fas fa-chart-bar"></i> Downtime per Machine</h3><canvas id="barChart"></canvas></div>
+        <div class="card chart-card"><h3><i class="fas fa-chart-line"></i> Pareto Breakdown</h3><canvas id="paretoChart"></canvas></div>
+      </section>
+
+      <!-- TABEL MTTF -->
+      <section class="card">
+        <h3><i class="fas fa-microchip"></i> Komponen dengan MTTF</h3>
+        <div class="table-responsive">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Komponen</th>
+                <th>Jumlah Data</th>
+                <th>Rata-rata Umur</th>
+                <th>Total Jam Operasi</th>
+              </tr>
+            </thead>
+            <tbody id="mttfTableBody">
+              <tr><td colspan="4" class="text-center">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <p>Memuat data...</p>
+  </div>
+
+  <div id="notification" class="notification"></div>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
