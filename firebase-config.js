@@ -1,6 +1,6 @@
 // Gunakan CDN yang sudah terbukti stabil
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, push, onValue, remove, update, increment} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCdjG0w6QOMdYzWsqF_QZKl7yHJOrcyjbQ",
@@ -20,5 +20,5 @@ const db = getDatabase(app);
 console.log("Firebase initialized:", app.name);
 
 // Export semua yang dibutuhkan
-export { db, ref, push, onValue, remove, set };
+export { db, ref, push, onValue, remove, set, update, increment };
 export default db;
