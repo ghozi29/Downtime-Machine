@@ -209,3 +209,7 @@ function renderParetoChart(){
 
 // Loading overlay
 function showLoading(show){ const l=document.getElementById("loadingOverlay"); if(l) l.style.display=show?"flex":"none";}
+
+onValue(ref(db, '.info/connected'), snap => {
+  console.log("Status koneksi Firebase:", snap.val() ? "TERHUBUNG" : "TIDAK TERHUBUNG");
+});
