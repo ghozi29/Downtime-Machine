@@ -59,20 +59,21 @@
               <div class="form-group">
                 <label><i class="fas fa-cog"></i> Nama Mesin <span class="required">*</span></label>
                 <input type="text" id="machineName" placeholder="Contoh: Super Mixer Yen Chen" required>
-                
-                <div class="form-group full-width">
-  <label><i class="fas fa-users"></i> Personil <span class="required">*</span></label>
-  
-  <div class="personnel-list">
-    <label><input type="checkbox" name="personnel" value="Andi"> Andi</label>
-    <label><input type="checkbox" name="personnel" value="Budi"> Budi</label>
-    <label><input type="checkbox" name="personnel" value="Citra"> Citra</label>
-    <label><input type="checkbox" name="personnel" value="Dewi"> Dewi</label>
-  </div>
+                            </div>
 
-  <small>Bisa pilih lebih dari 1 personil</small>
+              <div class="form-group full-width">
+  <label><i class="fas fa-users"></i> Personil <span class="required">*</span></label>
+
+  <select id="personnelSelect" multiple>
+    <option value="Andi">Andi</option>
+    <option value="Budi">Budi</option>
+    <option value="Citra">Citra</option>
+    <option value="Dewi">Dewi</option>
+  </select>
+
+  <small>Tahan CTRL (atau tap lama di HP) untuk pilih lebih dari 1</small>
 </div>
-              </div>
+              
               <div class="form-group">
                 <label><i class="fas fa-tag"></i> Kategori <span class="required">*</span></label>
                 <select id="machineCategory" required>
