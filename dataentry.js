@@ -10,113 +10,105 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ================= TAB =================
 function setupTabs() {
-  const maintenanceBtn = document.getElementById("tabMaintenanceBtn");
-  const componentBtn = document.getElementById("tabComponentBtn");
-
-  maintenanceBtn?.addEventListener("click", () => switchTab("maintenance"));
-  componentBtn?.addEventListener("click", () => switchTab("component"));
+  document.getElementById("tabMaintenanceBtn")?.addEventListener("click", () => switchTab("maintenance"));
+  document.getElementById("tabComponentBtn")?.addEventListener("click", () => switchTab("component"));
 }
 
 function switchTab(tab) {
   document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
 
-  document.getElementById(tab === "maintenance" ? "tabMaintenanceBtn" : "tabComponentBtn").classList.add("active");
-  document.getElementById(tab === "maintenance" ? "tabMaintenance" : "tabComponent").classList.add("active");
+  if (tab === "maintenance") {
+    document.getElementById("tabMaintenanceBtn").classList.add("active");
+    document.getElementById("tabMaintenance").classList.add("active");
+  } else {
+    document.getElementById("tabComponentBtn").classList.add("active");
+    document.getElementById("tabComponent").classList.add("active");
+  }
 }
 
 // ================= UTIL =================
-const getValue = id => document.getElementById(id)?.value;
-
-const getMultiSelectValues = (id) => {
-  return Array.from(document.getElementById(id).selectedOptions).map(o => o.value);
-};
-
-const toHours = (ms) => ms / (1000 * 60 * 60);
+const getValue = id => document.getElementById(id)?.value || "";
+const getMultiSelectValues = id => Array.from(document.getElementById(id)?.selectedOptions || []).map(o => o.value);
+const toHours = ms => ms / (1000 * 60 * 60);
 
 // ================= MAINTENANCE =================
 function setupMaintenanceForm() {
   const form = document.getElementById("maintenanceForm");
   if (!form) return;
 
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async e => {
     e.preventDefault();
-
     const btn = form.querySelector("button[type='submit']");
     toggleBtn(btn, true);
 
     try {
-      const data = collectMaintenanceData();
+      const machineName = getValue("machineName");
+      const category = getValue("machineCategory");
+      const area = getValue("areaSelect");
+      const technicians = getMultiSelectValues("personnelSelect");
+      const note = getValue("note");
 
-      if (!data) return toggleBtn(btn, false);
+      const operationStart = new Date(getValue("operationStart"));
+      const failureStart = new Date(getValue("failureStart"));
+      const maintenanceStart = new Date(getValue("maintenanceStart"));
+      const maintenanceEnd = new Date(getValue("maintenanceEnd"));
 
-      const dbRef = ref(db, `records`); // 🔥 lebih simple (hindari nested berat)
-      await push(dbRef, data);
+      // VALIDATION
+      if (!machineName || !category || !area || technicians.length === 0) {
+        showNotification("Lengkapi semua field wajib!", "error");
+        toggleBtn(btn, false);
+        return;
+      }
+      if (failureStart <= operationStart || maintenanceStart <= failureStart || maintenanceEnd <= maintenanceStart) {
+        showNotification("Urutan waktu tidak valid!", "error");
+        toggleBtn(btn, false);
+        return;
+      }
 
-      showNotification(`✅ Data ${data.machineName} tersimpan`, "success");
+      // CALC DURATIONS
+      const responseTime = toHours(maintenanceStart - failureStart);
+      const repairTime = toHours(maintenanceEnd - maintenanceStart);
+      const downtime = toHours(maintenanceEnd - failureStart);
+      const operatingTime = toHours(failureStart - operationStart);
+
+      // WORKLOAD PER TECHNICIAN
+      const technicianCount = technicians.length;
+      const workHoursPerTechnician = repairTime / technicianCount;
+
+      // DATA OBJECT
+      const recordData = {
+        machineName,
+        category,
+        area,
+        technicians,
+        technicianCount,
+        workHoursPerTechnician: +workHoursPerTechnician.toFixed(2),
+        responseTime: +responseTime.toFixed(2),
+        repairTime: +repairTime.toFixed(2),
+        downtimeTotal: +downtime.toFixed(2),
+        operatingTime: +operatingTime.toFixed(2),
+        timestamps: {
+          operationStart: operationStart.toISOString(),
+          failureStart: failureStart.toISOString(),
+          maintenanceStart: maintenanceStart.toISOString(),
+          maintenanceEnd: maintenanceEnd.toISOString(),
+        },
+        note,
+        createdAt: Date.now()
+      };
+
+      // PUSH TO FIREBASE
+      await push(ref(db, `records`), recordData);
+      showNotification(`✅ Data ${machineName} berhasil disimpan`, "success");
       form.reset();
-
     } catch (err) {
-      showNotification("❌ " + err.message, "error");
+      console.error(err);
+      showNotification("❌ Gagal menyimpan: " + err.message, "error");
     } finally {
       toggleBtn(btn, false);
     }
   });
-}
-
-function collectMaintenanceData() {
-  const machineName = getValue("machineName");
-  const category = getValue("machineCategory");
-
-  const operationStart = new Date(getValue("operationStart"));
-  const failureStart = new Date(getValue("failureStart"));
-  const maintenanceStart = new Date(getValue("maintenanceStart"));
-  const maintenanceEnd = new Date(getValue("maintenanceEnd"));
-
-  const technicians = getMultiSelectValues("technicians");
-  const note = getValue("note");
-
-  if (!machineName || !category || !technicians.length) {
-    showNotification("Data belum lengkap!", "error");
-    return null;
-  }
-
-  if (failureStart <= operationStart || maintenanceStart <= failureStart || maintenanceEnd <= maintenanceStart) {
-    showNotification("Urutan waktu tidak valid!", "error");
-    return null;
-  }
-
-  const responseTime = toHours(maintenanceStart - failureStart);
-  const repairTime = toHours(maintenanceEnd - maintenanceStart);
-  const downtime = toHours(maintenanceEnd - failureStart);
-  const operatingTime = toHours(failureStart - operationStart);
-
-  // 🔥 workload logic
-  const technicianCount = technicians.length;
-  const workPerTech = repairTime / technicianCount;
-
-  return {
-    machineName,
-    category,
-    technicians,
-    technicianCount,
-    workHoursPerTechnician: +workPerTech.toFixed(2),
-
-    responseTime: +responseTime.toFixed(2),
-    repairTime: +repairTime.toFixed(2),
-    downtimeTotal: +downtime.toFixed(2),
-    operatingTime: +operatingTime.toFixed(2),
-
-    timestamps: {
-      operationStart: operationStart.toISOString(),
-      failureStart: failureStart.toISOString(),
-      maintenanceStart: maintenanceStart.toISOString(),
-      maintenanceEnd: maintenanceEnd.toISOString(),
-    },
-
-    note,
-    createdAt: Date.now()
-  };
 }
 
 // ================= COMPONENT =================
@@ -124,38 +116,38 @@ function setupComponentForm() {
   const form = document.getElementById("componentForm");
   if (!form) return;
 
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async e => {
     e.preventDefault();
-
     const btn = form.querySelector("button[type='submit']");
     toggleBtn(btn, true);
 
     try {
       const componentName = getValue("componentName");
-      const install = new Date(getValue("installDate"));
-      const replace = new Date(getValue("replacementDate"));
+      const installDate = new Date(getValue("installDate"));
+      const replacementDate = new Date(getValue("replacementDate"));
+      const note = getValue("componentNote");
 
-      if (!componentName || !install || !replace) {
-        throw new Error("Data komponen belum lengkap");
-      }
+      if (!componentName || !installDate || !replacementDate) throw new Error("Lengkapi semua field komponen");
+      if (replacementDate <= installDate) throw new Error("Tanggal penggantian harus setelah pemasangan");
 
-      if (replace <= install) {
-        throw new Error("Tanggal tidak valid");
-      }
+      const lifespanHours = toHours(replacementDate - installDate);
 
-      const hours = toHours(replace - install);
-
-      await push(ref(db, "components"), {
+      const componentData = {
         componentName,
-        lifespanHours: +hours.toFixed(2),
+        installDate: installDate.toISOString(),
+        replacementDate: replacementDate.toISOString(),
+        lifespanHours: +lifespanHours.toFixed(2),
+        note,
         createdAt: Date.now()
-      });
+      };
 
-      showNotification("✅ Komponen tersimpan", "success");
+      await push(ref(db, `components`), componentData);
+      showNotification(`✅ Komponen ${componentName} berhasil disimpan`, "success");
       form.reset();
-
+      document.getElementById("operatingHours").value = "";
     } catch (err) {
-      showNotification("❌ " + err.message, "error");
+      console.error(err);
+      showNotification("❌ Gagal menyimpan: " + err.message, "error");
     } finally {
       toggleBtn(btn, false);
     }
@@ -170,11 +162,10 @@ function setupDateCalculation() {
 
   const calc = () => {
     if (install.value && replace.value) {
-      const hours = toHours(new Date(replace) - new Date(install));
+      const hours = toHours(new Date(replace.value) - new Date(install.value));
       if (hours > 0) output.value = hours.toFixed(2);
     }
   };
-
   install?.addEventListener("change", calc);
   replace?.addEventListener("change", calc);
 }
@@ -183,20 +174,18 @@ function setupDateCalculation() {
 function toggleBtn(btn, loading) {
   if (!btn) return;
   btn.disabled = loading;
-  btn.innerHTML = loading
-    ? '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'
-    : "Simpan Data";
+  btn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> Menyimpan...' : btn.dataset.defaultText || "Simpan";
 }
 
+// Notification
 function showNotification(msg, type = "info") {
   const el = document.getElementById("notification");
   if (!el) return;
-
   el.className = `notification ${type}`;
   el.innerHTML = msg;
   el.style.display = "block";
-
   setTimeout(() => el.style.display = "none", 4000);
 }
 
+// Make switchTab global
 window.switchTab = switchTab;
