@@ -1,258 +1,202 @@
 import { db, ref, push } from "./firebase-config.js";
 
-// ================= INITIALIZATION =================
-document.addEventListener('DOMContentLoaded', () => {
-  console.log("Data Entry page loaded");
-  
-  // Setup tabs
-  document.getElementById("tabMaintenanceBtn")?.addEventListener("click", () => switchTab('maintenance'));
-  document.getElementById("tabComponentBtn")?.addEventListener("click", () => switchTab('component'));
-  
-  // Setup area selector
-  document.getElementById("areaSelect")?.addEventListener("change", (e) => {
-    showNotification(`Area berubah ke: ${e.target.value}`, "info");
-  });
-  
-  // Setup forms
+// ================= INIT =================
+document.addEventListener("DOMContentLoaded", () => {
+  setupTabs();
   setupMaintenanceForm();
   setupComponentForm();
   setupDateCalculation();
 });
 
-// ================= SWITCH TAB =================
-function switchTab(tab) {
-  // Update tab buttons
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  
-  if (tab === 'maintenance') {
-    document.getElementById("tabMaintenanceBtn").classList.add('active');
-    document.getElementById("tabMaintenance").classList.add('active');
-    document.getElementById("tabComponent").classList.remove('active');
-  } else {
-    document.getElementById("tabComponentBtn").classList.add('active');
-    document.getElementById("tabComponent").classList.add('active');
-    document.getElementById("tabMaintenance").classList.remove('active');
-  }
+// ================= TAB =================
+function setupTabs() {
+  const maintenanceBtn = document.getElementById("tabMaintenanceBtn");
+  const componentBtn = document.getElementById("tabComponentBtn");
+
+  maintenanceBtn?.addEventListener("click", () => switchTab("maintenance"));
+  componentBtn?.addEventListener("click", () => switchTab("component"));
 }
 
-// ================= MAINTENANCE FORM =================
+function switchTab(tab) {
+  document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+
+  document.getElementById(tab === "maintenance" ? "tabMaintenanceBtn" : "tabComponentBtn").classList.add("active");
+  document.getElementById(tab === "maintenance" ? "tabMaintenance" : "tabComponent").classList.add("active");
+}
+
+// ================= UTIL =================
+const getValue = id => document.getElementById(id)?.value;
+
+const getMultiSelectValues = (id) => {
+  return Array.from(document.getElementById(id).selectedOptions).map(o => o.value);
+};
+
+const toHours = (ms) => ms / (1000 * 60 * 60);
+
+// ================= MAINTENANCE =================
 function setupMaintenanceForm() {
   const form = document.getElementById("maintenanceForm");
   if (!form) return;
-  
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-    submitBtn.disabled = true;
-    
+
+    const btn = form.querySelector("button[type='submit']");
+    toggleBtn(btn, true);
+
     try {
-      // Get values
-      const machineName = document.getElementById("machineName").value;
-      const category = document.getElementById("machineCategory").value;
-      const operationStart = document.getElementById("operationStart").value;
-      const failureStart = document.getElementById("failureStart").value;
-      const maintenanceStart = document.getElementById("maintenanceStart").value;
-      const maintenanceEnd = document.getElementById("maintenanceEnd").value;
-      const note = document.getElementById("note").value;
-      
-      // Validate
-      if (!machineName || !category || !operationStart || !failureStart || !maintenanceStart || !maintenanceEnd) {
-        showNotification("Semua field wajib diisi!", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-      
-      // Validate time order
-      const opStart = new Date(operationStart);
-      const failStart = new Date(failureStart);
-      const maintStart = new Date(maintenanceStart);
-      const maintEnd = new Date(maintenanceEnd);
-      
-      if (failStart <= opStart) {
-        showNotification("Waktu rusak harus SETELAH operasi mulai!", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-      
-      if (maintStart <= failStart) {
-        showNotification("Waktu mulai perbaikan harus SETELAH waktu rusak!", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-      
-      if (maintEnd <= maintStart) {
-        showNotification("Waktu selesai perbaikan harus SETELAH waktu mulai!", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-      
-      // Calculate durations
-      const responseTime = (maintStart - failStart) / (1000 * 60 * 60);
-      const repairTime = (maintEnd - maintStart) / (1000 * 60 * 60);
-      const downtimeTotal = (maintEnd - failStart) / (1000 * 60 * 60);
-      const operatingTime = (failStart - opStart) / (1000 * 60 * 60);
-      
-      // Get current area
-      const area = document.getElementById("areaSelect").value;
-      
-      // Prepare data
-      const recordData = {
-        machineName,
-        category,
-        operationStart,
-        failureStart,
-        maintenanceStart,
-        maintenanceEnd,
-        responseTime: parseFloat(responseTime.toFixed(2)),
-        repairTime: parseFloat(repairTime.toFixed(2)),
-        downtimeTotal: parseFloat(downtimeTotal.toFixed(2)),
-        operatingTime: parseFloat(operatingTime.toFixed(2)),
-        note,
-        createdAt: new Date().toISOString()
-      };
-      
-      console.log("Saving to Firebase:", recordData);
-      
-      // Save to Firebase
-      const dbRef = ref(db, `area/${area}/records`);
-      const result = await push(dbRef, recordData);
-      
-      console.log("Saved with ID:", result.key);
-      
-      showNotification(`
-        <strong>✅ Data berhasil disimpan!</strong><br>
-        Mesin: ${machineName}<br>
-        Downtime: ${downtimeTotal.toFixed(2)} jam
-      `, "success");
-      
+      const data = collectMaintenanceData();
+
+      if (!data) return toggleBtn(btn, false);
+
+      const dbRef = ref(db, `records`); // 🔥 lebih simple (hindari nested berat)
+      await push(dbRef, data);
+
+      showNotification(`✅ Data ${data.machineName} tersimpan`, "success");
       form.reset();
-      
-    } catch (error) {
-      console.error("Error saving:", error);
-      showNotification("❌ Gagal menyimpan: " + error.message, "error");
+
+    } catch (err) {
+      showNotification("❌ " + err.message, "error");
     } finally {
-      submitBtn.innerHTML = originalText;
-      submitBtn.disabled = false;
+      toggleBtn(btn, false);
     }
   });
 }
 
-// ================= COMPONENT FORM =================
+function collectMaintenanceData() {
+  const machineName = getValue("machineName");
+  const category = getValue("machineCategory");
+
+  const operationStart = new Date(getValue("operationStart"));
+  const failureStart = new Date(getValue("failureStart"));
+  const maintenanceStart = new Date(getValue("maintenanceStart"));
+  const maintenanceEnd = new Date(getValue("maintenanceEnd"));
+
+  const technicians = getMultiSelectValues("technicians");
+  const note = getValue("note");
+
+  if (!machineName || !category || !technicians.length) {
+    showNotification("Data belum lengkap!", "error");
+    return null;
+  }
+
+  if (failureStart <= operationStart || maintenanceStart <= failureStart || maintenanceEnd <= maintenanceStart) {
+    showNotification("Urutan waktu tidak valid!", "error");
+    return null;
+  }
+
+  const responseTime = toHours(maintenanceStart - failureStart);
+  const repairTime = toHours(maintenanceEnd - maintenanceStart);
+  const downtime = toHours(maintenanceEnd - failureStart);
+  const operatingTime = toHours(failureStart - operationStart);
+
+  // 🔥 workload logic
+  const technicianCount = technicians.length;
+  const workPerTech = repairTime / technicianCount;
+
+  return {
+    machineName,
+    category,
+    technicians,
+    technicianCount,
+    workHoursPerTechnician: +workPerTech.toFixed(2),
+
+    responseTime: +responseTime.toFixed(2),
+    repairTime: +repairTime.toFixed(2),
+    downtimeTotal: +downtime.toFixed(2),
+    operatingTime: +operatingTime.toFixed(2),
+
+    timestamps: {
+      operationStart: operationStart.toISOString(),
+      failureStart: failureStart.toISOString(),
+      maintenanceStart: maintenanceStart.toISOString(),
+      maintenanceEnd: maintenanceEnd.toISOString(),
+    },
+
+    note,
+    createdAt: Date.now()
+  };
+}
+
+// ================= COMPONENT =================
 function setupComponentForm() {
   const form = document.getElementById("componentForm");
   if (!form) return;
-  
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-    submitBtn.disabled = true;
-    
+
+    const btn = form.querySelector("button[type='submit']");
+    toggleBtn(btn, true);
+
     try {
-      const componentName = document.getElementById("componentName").value;
-      const installDate = document.getElementById("installDate").value;
-      const replacementDate = document.getElementById("replacementDate").value;
-      const operatingHours = document.getElementById("operatingHours").value;
-      const note = document.getElementById("componentNote").value;
-      
-      if (!componentName || !installDate || !replacementDate) {
-        showNotification("Nama komponen, tanggal pasang dan ganti wajib diisi!", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        return;
+      const componentName = getValue("componentName");
+      const install = new Date(getValue("installDate"));
+      const replace = new Date(getValue("replacementDate"));
+
+      if (!componentName || !install || !replace) {
+        throw new Error("Data komponen belum lengkap");
       }
-      
-      const install = new Date(installDate);
-      const replace = new Date(replacementDate);
-      
+
       if (replace <= install) {
-        showNotification("Tanggal penggantian harus setelah tanggal pemasangan!", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        return;
+        throw new Error("Tanggal tidak valid");
       }
-      
-      const lifespanHours = (replace - install) / (1000 * 60 * 60);
-      const area = document.getElementById("areaSelect").value;
-      
-      const componentData = {
+
+      const hours = toHours(replace - install);
+
+      await push(ref(db, "components"), {
         componentName,
-        installDate,
-        replacementDate,
-        lifespanHours: parseFloat(lifespanHours.toFixed(2)),
-        operatingHours: operatingHours || lifespanHours,
-        note,
-        createdAt: new Date().toISOString()
-      };
-      
-      console.log("Saving component:", componentData);
-      
-      const dbRef = ref(db, `area/${area}/components`);
-      const result = await push(dbRef, componentData);
-      
-      showNotification(`✅ Komponen ${componentName} berhasil disimpan!`, "success");
-      
+        lifespanHours: +hours.toFixed(2),
+        createdAt: Date.now()
+      });
+
+      showNotification("✅ Komponen tersimpan", "success");
       form.reset();
-      document.getElementById("operatingHours").value = "";
-      
-    } catch (error) {
-      console.error("Error:", error);
-      showNotification("❌ Gagal menyimpan: " + error.message, "error");
+
+    } catch (err) {
+      showNotification("❌ " + err.message, "error");
     } finally {
-      submitBtn.innerHTML = originalText;
-      submitBtn.disabled = false;
+      toggleBtn(btn, false);
     }
   });
 }
 
-// ================= AUTO CALCULATE =================
+// ================= AUTO CALC =================
 function setupDateCalculation() {
-  const installDate = document.getElementById("installDate");
-  const replacementDate = document.getElementById("replacementDate");
-  const operatingHours = document.getElementById("operatingHours");
-  
-  if (installDate && replacementDate) {
-    const calculate = () => {
-      if (installDate.value && replacementDate.value) {
-        const install = new Date(installDate.value);
-        const replace = new Date(replacementDate.value);
-        
-        if (replace > install) {
-          const hours = (replace - install) / (1000 * 60 * 60);
-          operatingHours.value = hours.toFixed(2);
-        }
-      }
-    };
-    
-    installDate.addEventListener("change", calculate);
-    replacementDate.addEventListener("change", calculate);
-  }
+  const install = document.getElementById("installDate");
+  const replace = document.getElementById("replacementDate");
+  const output = document.getElementById("operatingHours");
+
+  const calc = () => {
+    if (install.value && replace.value) {
+      const hours = toHours(new Date(replace) - new Date(install));
+      if (hours > 0) output.value = hours.toFixed(2);
+    }
+  };
+
+  install?.addEventListener("change", calc);
+  replace?.addEventListener("change", calc);
 }
 
-// ================= NOTIFICATION =================
-function showNotification(message, type = "info") {
-  const notification = document.getElementById("notification");
-  if (!notification) return;
-  
-  notification.className = `notification ${type}`;
-  notification.innerHTML = message;
-  notification.style.display = "block";
-  
-  setTimeout(() => {
-    notification.style.display = "none";
-  }, 5000);
+// ================= UI =================
+function toggleBtn(btn, loading) {
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'
+    : "Simpan Data";
 }
 
-// Make function global for HTML onclick
+function showNotification(msg, type = "info") {
+  const el = document.getElementById("notification");
+  if (!el) return;
+
+  el.className = `notification ${type}`;
+  el.innerHTML = msg;
+  el.style.display = "block";
+
+  setTimeout(() => el.style.display = "none", 4000);
+}
+
 window.switchTab = switchTab;
