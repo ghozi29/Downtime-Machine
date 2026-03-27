@@ -137,7 +137,6 @@ function renderComponentTable(data) {
         <td>${item.installDate ? new Date(item.installDate).toLocaleDateString() : ""}</td>
         <td>${item.replacementDate ? new Date(item.replacementDate).toLocaleDateString() : ""}</td>
         <td>${item.lifespanHours || ""}</td>
-        <td>${mttfHours || ""}</td>
         <td>${item.note || ""}</td>
         <td><button onclick="deleteComponent('${key}')" class="btn-small btn-danger">Hapus</button></td>
       </tr>
