@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
 
 <meta charset="UTF-8">
@@ -20,7 +19,6 @@
 <div class="container">
 
 <!-- SIDEBAR -->
-
 <div class="sidebar">
 
 <div class="sidebar-header">
@@ -49,41 +47,42 @@
 
 </div>
 
-
-<!-- MAIN CONTENT -->
-
+<!-- MAIN -->
 <div class="main">
 
 <div class="header">
-
 <h1>🤖 Maintenance AI Assistant</h1>
-
 <p>Tanyakan analisis data maintenance secara langsung</p>
-
 </div>
-
 
 <div class="chat-container">
 
+<!-- CHAT -->
 <div id="chatMessages" class="chat-messages">
 
 <div class="botMsg">
-Halo 👋 Saya AI Maintenance Assistant.  
-Silakan tanyakan sesuatu seperti:
+Halo 👋 Saya AI Maintenance Assistant.<br><br>
 
-• mesin downtime tertinggi  
-• mttr bulan ini  
-• kategori kerusakan terbanyak  
-• komponen paling sering diganti  
-
+Contoh pertanyaan:
+<ul>
+<li>Mesin downtime tertinggi</li>
+<li>MTTR bulan ini</li>
+<li>Kategori kerusakan terbanyak</li>
+<li>Komponen paling sering diganti</li>
+</ul>
 </div>
 
 </div>
 
+<!-- TYPING INDICATOR -->
+<div id="typing" class="typing" style="display:none;">
+AI sedang mengetik...
+</div>
 
+<!-- INPUT -->
 <div class="chat-input">
 
-<input id="chatInput" placeholder="Tulis pertanyaan...">
+<input id="chatInput" placeholder="Tulis pertanyaan..." onkeypress="handleEnter(event)">
 
 <button onclick="askAI()">
 <i class="fas fa-paper-plane"></i>
@@ -98,6 +97,21 @@ Silakan tanyakan sesuatu seperti:
 </div>
 
 <script type="module" src="assistant.js"></script>
+
+<script>
+// ENTER KEY SUPPORT
+function handleEnter(e) {
+  if (e.key === "Enter") {
+    askAI();
+  }
+}
+
+// AUTO SCROLL
+function scrollChat() {
+  const chat = document.getElementById("chatMessages");
+  chat.scrollTop = chat.scrollHeight;
+}
+</script>
 
 </body>
 </html>
