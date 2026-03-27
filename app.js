@@ -1,5 +1,7 @@
 import { db } from "./firebase-config.js";
 import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { Chart, registerables } from "https://cdn.jsdelivr.net/npm/chart.js";
+Chart.register(...registerables);
 
 let records = [];
 let components = [];
