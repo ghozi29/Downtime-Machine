@@ -5,14 +5,13 @@ let records = [];
 let components = [];
 let charts = {};
 
+// ================= INIT =================
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("applyPeriodFilter")
-    .addEventListener("click", loadData);
-
+  document.getElementById("applyPeriodFilter").addEventListener("click", loadData);
   loadData();
 });
 
-// ================= LOAD DATA =================
+// ================= LOAD =================
 function loadData() {
   showLoading(true);
 
@@ -24,14 +23,61 @@ function loadData() {
       components = [];
       snap2.forEach(c => components.push(c.val()));
 
-      computeKPI();
-      renderCharts();
-      renderTable();
+      const filtered = applyFilter(records);
+
+      computeKPI(filtered);
+      renderCharts(filtered);
+      renderTable(filtered);
 
       showLoading(false);
     }, { onlyOnce: true });
 
   }, { onlyOnce: true });
+}
+
+// ================= FILTER =================
+function applyFilter(data) {
+  const period = document.getElementById("periodFilter").value;
+  const now = new Date();
+
+  return data.filter(r => {
+    if (!r.timestamps?.failureStart) return false;
+
+    const d = new Date(r.timestamps.failureStart);
+    if (isNaN(d)) return false;
+
+    switch (period) {
+      case "today":
+        return d.toDateString() === now.toDateString();
+
+      case "week":
+        const weekAgo = new Date();
+        weekAgo.setDate(now.getDate() - 7);
+        return d >= weekAgo;
+
+      case "month":
+        return d.getMonth() === now.getMonth() &&
+               d.getFullYear() === now.getFullYear();
+
+      case "3months":
+        return diffMonths(d, now) <= 3;
+
+      case "6months":
+        return diffMonths(d, now) <= 6;
+
+      case "year":
+        return d.getFullYear() === now.getFullYear();
+
+      case "all":
+      default:
+        return true;
+    }
+  });
+}
+
+function diffMonths(d1, d2) {
+  return (d2.getFullYear() - d1.getFullYear()) * 12 +
+         (d2.getMonth() - d1.getMonth());
 }
 
 // ================= HELPER =================
@@ -43,7 +89,7 @@ function getDowntime(r) {
 
   if (isNaN(start) || isNaN(end)) return 0;
 
-  return (end - start) / (1000 * 60 * 60); // jam
+  return (end - start) / 3600000;
 }
 
 function getOperating(r) {
@@ -54,26 +100,26 @@ function getOperating(r) {
 
   if (isNaN(start) || isNaN(end)) return 0;
 
-  return (end - start) / (1000 * 60 * 60); // jam
+  return (end - start) / 3600000;
 }
 
 // ================= KPI =================
-function computeKPI() {
+function computeKPI(data) {
   let totalRepair = 0;
   let totalOperating = 0;
   let totalDowntime = 0;
 
-  records.forEach(r => {
-    const downtime = getDowntime(r);
-    const operating = getOperating(r);
+  data.forEach(r => {
+    const d = getDowntime(r);
+    const o = getOperating(r);
 
-    totalDowntime += downtime;
-    totalRepair += downtime;
-    totalOperating += operating;
+    totalDowntime += d;
+    totalRepair += d;
+    totalOperating += o;
   });
 
-  const MTTR = records.length ? totalRepair / records.length : 0;
-  const MTBF = records.length ? totalOperating / records.length : 0;
+  const MTTR = data.length ? totalRepair / data.length : 0;
+  const MTBF = data.length ? totalOperating / data.length : 0;
 
   let totalLife = 0;
   components.forEach(c => totalLife += c.lifespanHours || 0);
@@ -83,29 +129,31 @@ function computeKPI() {
     ? (totalOperating / (totalOperating + totalDowntime)) * 100
     : 100;
 
-  document.getElementById("mttr").innerText = MTTR.toFixed(2);
-  document.getElementById("mtbf").innerText = MTBF.toFixed(2);
-  document.getElementById("mttf").innerText = MTTF.toFixed(2);
-  document.getElementById("availability").innerText = availability.toFixed(2) + "%";
-  document.getElementById("totalDowntime").innerText = totalDowntime.toFixed(2);
-  document.getElementById("totalBreakdown").innerText = records.length;
+  setText("mttr", MTTR.toFixed(2));
+  setText("mtbf", MTBF.toFixed(2));
+  setText("mttf", MTTF.toFixed(2));
+  setText("availability", availability.toFixed(2) + "%");
+  setText("totalDowntime", totalDowntime.toFixed(2));
+  setText("totalBreakdown", data.length);
 }
 
 // ================= TABLE =================
-function renderTable() {
+function renderTable(data) {
   const tbody = document.getElementById("mttfTableBody");
 
   if (!components.length) {
-    tbody.innerHTML = "<tr><td colspan='3'>Tidak ada data</td></tr>";
+    tbody.innerHTML = `<tr><td colspan="4">Tidak ada data</td></tr>`;
     return;
   }
 
   let html = "";
+
   components.forEach(c => {
     html += `
       <tr>
         <td>${c.componentName}</td>
         <td>1</td>
+        <td>${c.lifespanHours || 0}</td>
         <td>${c.lifespanHours || 0}</td>
       </tr>
     `;
@@ -115,104 +163,112 @@ function renderTable() {
 }
 
 // ================= CHART =================
-function renderCharts() {
-  renderPie();
-  renderBar();
-  renderLine();
-  renderPareto();
+function renderCharts(data) {
+  renderPie(data);
+  renderBar(data);
+  renderLine(data);
+  renderRank(data);
 }
 
 // PIE
-function renderPie() {
+function renderPie(data) {
   const ctx = document.getElementById("pieChart").getContext("2d");
 
-  const data = {};
-  records.forEach(r => {
+  const map = {};
+  data.forEach(r => {
     const cat = r.category || "Other";
-    data[cat] = (data[cat] || 0) + 1;
+    map[cat] = (map[cat] || 0) + 1;
   });
 
-  if (charts.pie) charts.pie.destroy();
+  resetChart("pie");
 
   charts.pie = new Chart(ctx, {
     type: "pie",
     data: {
-      labels: Object.keys(data),
-      datasets: [{ data: Object.values(data) }]
+      labels: Object.keys(map),
+      datasets: [{ data: Object.values(map) }]
     }
   });
 }
 
-// BAR (downtime per machine)
-function renderBar() {
+// BAR
+function renderBar(data) {
   const ctx = document.getElementById("barChart").getContext("2d");
 
-  const data = {};
-  records.forEach(r => {
+  const map = {};
+  data.forEach(r => {
     const m = r.machineName || "Unknown";
-    data[m] = (data[m] || 0) + getDowntime(r);
+    map[m] = (map[m] || 0) + getDowntime(r);
   });
 
-  if (charts.bar) charts.bar.destroy();
+  resetChart("bar");
 
   charts.bar = new Chart(ctx, {
     type: "bar",
     data: {
-      labels: Object.keys(data),
-      datasets: [{ data: Object.values(data) }]
+      labels: Object.keys(map),
+      datasets: [{ data: Object.values(map) }]
     }
   });
 }
 
-// LINE (per bulan)
-function renderLine() {
+// LINE
+function renderLine(data) {
   const ctx = document.getElementById("lineChart").getContext("2d");
 
-  const data = {};
-
-  records.forEach(r => {
+  const map = {};
+  data.forEach(r => {
     if (!r.timestamps?.failureStart) return;
 
-    const date = new Date(r.timestamps.failureStart);
-    if (isNaN(date)) return;
+    const d = new Date(r.timestamps.failureStart);
+    if (isNaN(d)) return;
 
-    const key = date.toISOString().slice(0,7);
-
-    data[key] = (data[key] || 0) + 1;
+    const key = d.toISOString().slice(0,7);
+    map[key] = (map[key] || 0) + getDowntime(r);
   });
 
-  if (charts.line) charts.line.destroy();
+  resetChart("line");
 
   charts.line = new Chart(ctx, {
     type: "line",
     data: {
-      labels: Object.keys(data),
-      datasets: [{ data: Object.values(data) }]
+      labels: Object.keys(map),
+      datasets: [{ data: Object.values(map) }]
     }
   });
 }
 
-// PARETO
-function renderPareto() {
-  const ctx = document.getElementById("paretoChart").getContext("2d");
+// RANK / PARETO
+function renderRank(data) {
+  const ctx = document.getElementById("rankChart").getContext("2d");
 
-  const data = {};
-  records.forEach(r => {
+  const map = {};
+  data.forEach(r => {
     const m = r.machineName || "Unknown";
-    data[m] = (data[m] || 0) + getDowntime(r);
+    map[m] = (map[m] || 0) + getDowntime(r);
   });
 
-  const sorted = Object.entries(data).sort((a,b)=>b[1]-a[1]);
+  const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
 
-  if (charts.pareto) charts.pareto.destroy();
+  resetChart("rank");
 
-  charts.pareto = new Chart(ctx, {
+  charts.rank = new Chart(ctx, {
     type: "bar",
     data: {
       labels: sorted.map(x=>x[0]),
       datasets: [{ data: sorted.map(x=>x[1]) }]
     }
   });
+}
+
+// ================= UTIL =================
+function resetChart(name) {
+  if (charts[name]) charts[name].destroy();
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.innerText = value;
 }
 
 // ================= LOADING =================
