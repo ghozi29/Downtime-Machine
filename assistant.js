@@ -1,219 +1,167 @@
-import { db, ref, onValue } from "./firebase-config.js"
+// assistant.js
 
-let records=[]
-let components=[]
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
+// 🔥 Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "iotcamar.firebaseapp.com",
+  databaseURL: "https://iotcamar-default-rtdb.firebaseio.com",
+  projectId: "iotcamar",
+  storageBucket: "iotcamar.appspot.com",
+  messagingSenderId: "878187768527",
+  appId: "1:878187768527:web:e5c6412e811b15251825ba"
+};
 
-// ambil data maintenance
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-onValue(ref(db,"area/hormon/records"),(snapshot)=>{
+// 🔥 Cache data
+let maintenanceData = {};
+let componentData = {};
 
-records=[]
+// 🔥 Load data realtime
+onValue(ref(db, "records"), (snap) => {
+  maintenanceData = snap.val() || {};
+});
 
-snapshot.forEach(child=>{
+onValue(ref(db, "components"), (snap) => {
+  componentData = snap.val() || {};
+});
 
-records.push({
-id:child.key,
-...child.val()
-})
+// 🔥 DOM
+const chatMessages = document.getElementById("chatMessages");
+const input = document.getElementById("chatInput");
+const typing = document.getElementById("typing");
 
-})
-
-})
-
-
-// ambil data komponen
-
-onValue(ref(db,"area/hormon/components"),(snapshot)=>{
-
-components=[]
-
-snapshot.forEach(child=>{
-
-components.push({
-id:child.key,
-...child.val()
-})
-
-})
-
-})
-
-
-// kirim pertanyaan
-
-window.askAI=function(){
-
-const input=document.getElementById("chatInput")
-
-const question=input.value.toLowerCase()
-
-if(!question) return
-
-addMessage(question,"user")
-
-const answer=processQuestion(question)
-
-setTimeout(()=>{
-
-addMessage(answer,"bot")
-
-},400)
-
-input.value=""
-
+// =============================
+// 💬 CHAT UI
+// =============================
+function addMessage(text, sender = "bot") {
+  const div = document.createElement("div");
+  div.className = sender === "user" ? "userMsg" : "botMsg";
+  div.innerHTML = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+// =============================
+// 🧠 AI LOGIC
+// =============================
+function analyzeQuestion(q) {
+  q = q.toLowerCase();
 
+  // 🔹 Downtime tertinggi
+  if (q.includes("downtime")) {
+    let max = 0;
+    let machine = "-";
 
-function addMessage(text,type){
+    Object.values(maintenanceData).forEach(item => {
+      const dt = parseFloat(item.downtimeTotal) || 0;
+      if (dt > max) {
+        max = dt;
+        machine = item.machineName;
+      }
+    });
 
-const box=document.getElementById("chatMessages")
+    return `Mesin dengan downtime tertinggi adalah <b>${machine}</b> dengan total <b>${max} jam</b>.`;
+  }
 
-const div=document.createElement("div")
+  // 🔹 MTTR
+  if (q.includes("mttr")) {
+    let total = 0;
+    let count = 0;
 
-div.className=type=="user"?"userMsg":"botMsg"
+    Object.values(maintenanceData).forEach(item => {
+      const val = parseFloat(item.repairTime);
+      if (!isNaN(val)) {
+        total += val;
+        count++;
+      }
+    });
 
-div.innerText=text
+    const mttr = count ? (total / count).toFixed(2) : 0;
+    return `MTTR saat ini adalah <b>${mttr} jam</b> berdasarkan ${count} data.`;
+  }
 
-box.appendChild(div)
+  // 🔹 kategori terbanyak
+  if (q.includes("kategori")) {
+    let map = {};
 
-box.scrollTop=box.scrollHeight
+    Object.values(maintenanceData).forEach(item => {
+      const cat = item.category || "Unknown";
+      map[cat] = (map[cat] || 0) + 1;
+    });
 
+    let top = Object.entries(map).sort((a,b)=>b[1]-a[1])[0];
+
+    return `Kategori kerusakan terbanyak adalah <b>${top[0]}</b> dengan <b>${top[1]} kejadian</b>.`;
+  }
+
+  // 🔹 komponen sering diganti
+  if (q.includes("komponen")) {
+    let map = {};
+
+    Object.values(componentData).forEach(item => {
+      const name = item.componentName || "Unknown";
+      map[name] = (map[name] || 0) + 1;
+    });
+
+    let top = Object.entries(map).sort((a,b)=>b[1]-a[1])[0];
+
+    return `Komponen paling sering diganti adalah <b>${top[0]}</b> sebanyak <b>${top[1]} kali</b>.`;
+  }
+
+  // 🔹 fallback AI style
+  return generateSmartInsight();
 }
 
+// =============================
+// 🤖 SMART INSIGHT (AI FEEL)
+// =============================
+function generateSmartInsight() {
 
+  let totalDowntime = 0;
+  let totalRepair = 0;
+  let count = 0;
 
-function processQuestion(q){
+  Object.values(maintenanceData).forEach(item => {
+    totalDowntime += parseFloat(item.downtimeTotal) || 0;
+    totalRepair += parseFloat(item.repairTime) || 0;
+    count++;
+  });
 
-if(records.length==0){
+  const avgDowntime = count ? (totalDowntime / count).toFixed(2) : 0;
+  const avgRepair = count ? (totalRepair / count).toFixed(2) : 0;
 
-return "Data maintenance belum tersedia."
-
+  return `
+  Saya tidak menemukan pertanyaan spesifik, tapi ini insight dari data kamu:<br><br>
+  
+  • Rata-rata downtime: <b>${avgDowntime} jam</b><br>
+  • Rata-rata repair time: <b>${avgRepair} jam</b><br><br>
+  
+  💡 Saran: lakukan preventive maintenance untuk mengurangi downtime.
+  `;
 }
 
+// =============================
+// 🚀 MAIN FUNCTION
+// =============================
+window.askAI = function () {
+  const question = input.value.trim();
+  if (!question) return;
 
-// downtime tertinggi
+  addMessage(question, "user");
+  input.value = "";
 
-if(q.includes("downtime tertinggi")){
+  typing.style.display = "block";
 
-let machines={}
+  setTimeout(() => {
+    typing.style.display = "none";
 
-records.forEach(r=>{
+    const answer = analyzeQuestion(question);
+    addMessage(answer, "bot");
 
-let m=r.machineName||"Unknown"
-
-let d=r.downtimeTotal||r.downtimeHours||0
-
-machines[m]=(machines[m]||0)+d
-
-})
-
-let sorted=Object.entries(machines)
-
-.sort((a,b)=>b[1]-a[1])
-
-return `Mesin dengan downtime tertinggi adalah ${sorted[0][0]} dengan total ${sorted[0][1].toFixed(2)} jam.`
-
-}
-
-
-// MTTR
-
-if(q.includes("mttr")){
-
-let total=0
-let count=0
-
-records.forEach(r=>{
-
-if(r.repairTime){
-
-total+=r.repairTime
-count++
-
-}
-
-})
-
-if(count==0) return "Data MTTR belum tersedia."
-
-return `MTTR rata-rata adalah ${(total/count).toFixed(2)} jam.`
-
-}
-
-
-// MTBF
-
-if(q.includes("mtbf")){
-
-let total=0
-let count=0
-
-records.forEach(r=>{
-
-if(r.operatingTime){
-
-total+=r.operatingTime
-count++
-
-}
-
-})
-
-if(count==0) return "Data MTBF belum tersedia."
-
-return `MTBF rata-rata adalah ${(total/count).toFixed(2)} jam.`
-
-}
-
-
-// kategori kerusakan
-
-if(q.includes("kategori")){
-
-let cat={}
-
-records.forEach(r=>{
-
-let c=r.category||"lainnya"
-
-cat[c]=(cat[c]||0)+1
-
-})
-
-let sorted=Object.entries(cat)
-
-.sort((a,b)=>b[1]-a[1])
-
-return `Kategori kerusakan paling sering adalah ${sorted[0][0]} dengan ${sorted[0][1]} kejadian.`
-
-}
-
-
-// komponen paling sering diganti
-
-if(q.includes("komponen")){
-
-let comp={}
-
-components.forEach(c=>{
-
-let n=c.componentName||"unknown"
-
-comp[n]=(comp[n]||0)+1
-
-})
-
-let sorted=Object.entries(comp)
-
-.sort((a,b)=>b[1]-a[1])
-
-return `Komponen yang paling sering diganti adalah ${sorted[0][0]} sebanyak ${sorted[0][1]} kali.`
-
-}
-
-
-return "Saya bisa menjawab tentang MTTR, MTBF, downtime tertinggi, kategori kerusakan, atau komponen."
-
-}
+  }, 800); // delay biar terasa AI
+};
