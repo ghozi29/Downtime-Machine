@@ -1,10 +1,6 @@
 // ================= IMPORT =================
 import { db } from "./firebase-config.js";
 import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import Chart from "https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.esm.min.js";
-import { registerables } from "https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.esm.min.js";
-
-Chart.register(...registerables);
 
 // ================= INIT =================
 let records = [];
