@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-// 🔥 Firebase Config
+// 🔥 Firebase
 const firebaseConfig = {
   apiKey: "AIzaSy...",
   authDomain: "iotcamar.firebaseapp.com",
@@ -14,54 +14,37 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 🔥 DOM
+// DOM
 const container = document.getElementById("workloadContainer");
 const monthFilter = document.getElementById("monthFilter");
 
-// 🔥 Cache
-let dataCache = {};
+// Cache
+let maintenanceData = {};
+let technicians = {};
 
 // ==========================
-// 📥 LOAD DATA
+// 🔹 MASTER DATA TEKNISI
+// Bisa dari Firebase / hardcode
+// ==========================
+technicians = {
+  "Budi": "images/budi.jpg",
+  "Andi": "images/andi.jpg",
+  "Sari": "images/sari.jpg",
+  "Tini": "images/tini.jpg"
+};
+
+// ==========================
+// 🔹 LOAD DATA MAINTENANCE
 // ==========================
 onValue(ref(db, "records"), (snapshot) => {
-  dataCache = snapshot.val() || {};
+  maintenanceData = snapshot.val() || {};
   renderWorkload();
 });
 
 // ==========================
-// 📊 PROCESS DATA
-// ==========================
-function calculateWorkload(data) {
-
-  let result = {};
-
-  Object.values(data).forEach(item => {
-
-    const teknisi = item.technician || "Unknown";
-
-    if (!result[teknisi]) {
-      result[teknisi] = {
-        totalJob: 0,
-        totalDowntime: 0,
-        totalRepair: 0
-      };
-    }
-
-    result[teknisi].totalJob++;
-    result[teknisi].totalDowntime += parseFloat(item.downtimeTotal) || 0;
-    result[teknisi].totalRepair += parseFloat(item.repairTime) || 0;
-
-  });
-
-  return result;
-}
-
-// ==========================
-// 📅 FILTER BULAN
+// 🔹 FILTER BULAN
 // ==========================
 function filterByMonth(data) {
-
   const val = monthFilter.value;
   if (!val) return data;
 
@@ -70,52 +53,72 @@ function filterByMonth(data) {
   let filtered = {};
 
   Object.entries(data).forEach(([key, item]) => {
-
     const t = item.timestamps?.failureStart;
     if (!t) return;
-
     const d = new Date(t);
 
-    if (
-      d.getFullYear() == year &&
-      (d.getMonth() + 1) == month
-    ) {
+    if (d.getFullYear() == year && (d.getMonth() + 1) == month) {
       filtered[key] = item;
     }
-
   });
 
   return filtered;
 }
 
 // ==========================
-// 🎨 RENDER UI
+// 🔹 CALCULATE WORKLOAD PER TEKNISI
+// ==========================
+function calculateWorkload(filteredData) {
+  const result = {};
+
+  // Init semua teknisi
+  Object.keys(technicians).forEach(name => {
+    result[name] = { totalJob: 0, totalDowntime: 0, totalRepair: 0 };
+  });
+
+  // Tambahkan data dari maintenance
+  Object.values(filteredData).forEach(item => {
+    const name = item.technician || "Unknown";
+    if (!result[name]) result[name] = { totalJob: 0, totalDowntime: 0, totalRepair: 0 };
+
+    result[name].totalJob++;
+    result[name].totalDowntime += parseFloat(item.downtimeTotal) || 0;
+    result[name].totalRepair += parseFloat(item.repairTime) || 0;
+  });
+
+  return result;
+}
+
+// ==========================
+// 🔹 WORKLOAD LEVEL
+// ==========================
+function getWorkloadLevel(job) {
+  if (job >= 15) return { text: "TINGGI", class: "high" };
+  if (job >= 7) return { text: "SEDANG", class: "medium" };
+  return { text: "RENDAH", class: "low" };
+}
+
+// ==========================
+// 🔹 RENDER UI
 // ==========================
 function renderWorkload() {
-
-  const filtered = filterByMonth(dataCache);
+  const filtered = filterByMonth(maintenanceData);
   const workload = calculateWorkload(filtered);
 
   container.innerHTML = "";
 
-  if (!Object.keys(workload).length) {
-    container.innerHTML = "<p>Tidak ada data</p>";
-    return;
-  }
-
-  Object.entries(workload).forEach(([name, data]) => {
-
-    const avgRepair = data.totalJob 
-      ? (data.totalRepair / data.totalJob).toFixed(2)
-      : 0;
-
+  Object.entries(technicians).forEach(([name, photo]) => {
+    const data = workload[name] || { totalJob: 0, totalDowntime: 0, totalRepair: 0 };
+    const avgRepair = data.totalJob ? (data.totalRepair / data.totalJob).toFixed(2) : 0;
     const level = getWorkloadLevel(data.totalJob);
 
     const card = document.createElement("div");
     card.className = "card workload-card";
 
     card.innerHTML = `
-      <h3><i class="fas fa-user-cog"></i> ${name}</h3>
+      <h3>
+        <img src="${photo || 'images/default.png'}" class="tech-photo"/> ${name}
+      </h3>
       <p>📌 Total Job: <b>${data.totalJob}</b></p>
       <p>⏱ Total Repair: <b>${data.totalRepair} jam</b></p>
       <p>⚠️ Downtime: <b>${data.totalDowntime} jam</b></p>
@@ -125,24 +128,9 @@ function renderWorkload() {
 
     container.appendChild(card);
   });
-
 }
 
 // ==========================
-// 🔥 WORKLOAD LEVEL
-// ==========================
-function getWorkloadLevel(job) {
-
-  if (job >= 15) {
-    return { text: "TINGGI", class: "high" };
-  } else if (job >= 7) {
-    return { text: "SEDANG", class: "medium" };
-  } else {
-    return { text: "RENDAH", class: "low" };
-  }
-}
-
-// ==========================
-// 🎯 EVENT
+// EVENT
 // ==========================
 monthFilter.addEventListener("change", renderWorkload);
