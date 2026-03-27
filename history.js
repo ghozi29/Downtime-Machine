@@ -71,14 +71,22 @@ function loadComponentData() {
     let no = 1;
     Object.keys(data).forEach((key) => {
       const item = data[key];
+      // Hitung MTTF dalam jam (dari install ke replacement)
+      let mttfHours = "";
+      if (item.installDate && item.replacementDate) {
+        const install = new Date(item.installDate);
+        const replacement = new Date(item.replacementDate);
+        mttfHours = Math.round((replacement - install) / (1000 * 60 * 60)); // selisih dalam jam
+      }
+
       html += `
         <tr>
           <td>${no++}</td>
-          <td>${item.name || ""}</td>
-          <td>${item.installDate || ""}</td>
-          <td>${item.replaceDate || ""}</td>
-          <td>${item.lifetime || ""}</td>
-          <td>${item.mttf || ""}</td>
+          <td>${item.componentName || ""}</td>
+          <td>${item.installDate ? new Date(item.installDate).toLocaleDateString() : ""}</td>
+          <td>${item.replacementDate ? new Date(item.replacementDate).toLocaleDateString() : ""}</td>
+          <td>${item.lifespanHours || ""}</td>
+          <td>${mttfHours}</td>
           <td>${item.note || ""}</td>
           <td><button onclick="deleteComponent('${key}')" class="btn-small btn-danger">Hapus</button></td>
         </tr>
