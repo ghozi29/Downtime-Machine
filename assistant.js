@@ -5,10 +5,14 @@ import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.
 
 // 🔥 Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyCdjG0w6QOMdYzWsqF_QZKl7yHJOrcyjbQ",
   authDomain: "iotcamar.firebaseapp.com",
   databaseURL: "https://iotcamar-default-rtdb.firebaseio.com",
   projectId: "iotcamar",
+  storageBucket: "iotcamar.firebasestorage.app",
+  messagingSenderId: "878187768527",
+  appId: "1:878187768527:web:e5c6412e811b15251825ba",
+  measurementId: "G-V40ZQ4Y9RS"
 };
 
 const app = initializeApp(firebaseConfig);
