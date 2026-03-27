@@ -1,314 +1,183 @@
-import { db, ref, onValue, remove } from "./firebase-config.js";
+// history.js
+const maintenanceTableBody = document.getElementById('maintenanceTableBody');
+const componentTableBody = document.getElementById('componentTableBody');
+const filterDate = document.getElementById('filterDate');
+const filterMonth = document.getElementById('filterMonth');
+const filterYear = document.getElementById('filterYear');
+const filterCategory = document.getElementById('filterCategory');
+const filterMachine = document.getElementById('filterMachine');
+const applyFilter = document.getElementById('applyFilter');
+const resetAllFilters = document.getElementById('resetAllFilters');
+const exportMaintenance = document.getElementById('exportMaintenance');
+const exportComponents = document.getElementById('exportComponents');
+const filterResultCount = document.getElementById('filterResultCount');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const notification = document.getElementById('notification');
 
-// ================= GLOBAL VARIABLES =================
-let allRecords = [];
-let allComponents = [];
-let currentArea = "hormon";
+// Dummy Data (replace with real API / DB)
+let maintenanceData = [
+  {
+    mesin: "Injeksi 1",
+    kategori: "Injeksi",
+    operasiMulai: "2026-03-01 08:00",
+    waktuRusak: "2026-03-01 12:30",
+    mulaiPerbaikan: "2026-03-01 12:45",
+    selesaiPerbaikan: "2026-03-01 14:00",
+    responseTime: "15 menit",
+    repairTime: "1 jam 15 menit",
+    operatingTime: "4 jam 30 menit",
+    totalDowntime: "1 jam 15 menit",
+    catatan: "Ganti pompa",
+  },
+  {
+    mesin: "Packaging 2",
+    kategori: "Packaging",
+    operasiMulai: "2026-03-02 07:00",
+    waktuRusak: "2026-03-02 09:20",
+    mulaiPerbaikan: "2026-03-02 09:25",
+    selesaiPerbaikan: "2026-03-02 10:10",
+    responseTime: "5 menit",
+    repairTime: "45 menit",
+    operatingTime: "2 jam 20 menit",
+    totalDowntime: "45 menit",
+    catatan: "Roller aus",
+  }
+];
 
-// ================= INITIALIZATION =================
-document.addEventListener('DOMContentLoaded', () => {
-  console.log("History page loaded");
-  
-  // Setup area selector
-  document.getElementById("areaSelect")?.addEventListener("change", (e) => {
-    currentArea = e.target.value;
-    loadData();
-  });
-  
-  // Setup filter buttons
-  document.getElementById("applyFilter")?.addEventListener("click", applyFilters);
-  document.getElementById("resetAllFilters")?.addEventListener("click", resetFilters);
-  document.getElementById("exportMaintenance")?.addEventListener("click", () => exportToExcel(allRecords, "maintenance"));
-  document.getElementById("exportComponents")?.addEventListener("click", () => exportToExcel(allComponents, "components"));
-  
-  // Load data
-  loadData();
-});
+let componentData = [
+  {
+    komponen: "Pompa Injeksi",
+    tanggalPasang: "2026-01-01",
+    tanggalGanti: "2026-03-01",
+    umur: 500,
+    mttf: 500,
+    catatan: "Penggantian rutin"
+  },
+  {
+    komponen: "Roller Packaging",
+    tanggalPasang: "2026-02-01",
+    tanggalGanti: "2026-03-02",
+    umur: 300,
+    mttf: 300,
+    catatan: "Kerusakan"
+  }
+];
 
-// ================= LOAD DATA =================
-function loadData() {
-  showLoading(true);
-  
-  // Load maintenance records
-  const recordsRef = ref(db, `area/${currentArea}/records`);
-  onValue(recordsRef, (snapshot) => {
-    allRecords = [];
-    snapshot.forEach(child => {
-      allRecords.push({
-        id: child.key,
-        ...child.val()
-      });
-    });
-    console.log(`Loaded ${allRecords.length} maintenance records`);
-    
-    // Load components
-    const compRef = ref(db, `area/${currentArea}/components`);
-    onValue(compRef, (compSnapshot) => {
-      allComponents = [];
-      compSnapshot.forEach(child => {
-        allComponents.push({
-          id: child.key,
-          ...child.val()
-        });
-      });
-      console.log(`Loaded ${allComponents.length} components`);
-      
-      // Render tables
-      renderMaintenanceTable(allRecords);
-      renderComponentTable(allComponents);
-      updateResultCount(allRecords.length);
-      
-      showLoading(false);
-      showNotification(`Data loaded: ${allRecords.length} records, ${allComponents.length} components`, "success");
-    }, {
-      onlyOnce: true
-    });
-  }, {
-    onlyOnce: true
-  });
+// ------------------ UTILITIES ------------------
+function showLoading(show = true) {
+  loadingOverlay.style.display = show ? 'flex' : 'none';
 }
 
-// ================= RENDER MAINTENANCE TABLE =================
-function renderMaintenanceTable(records) {
-  const tbody = document.getElementById("maintenanceTableBody");
-  if (!tbody) return;
-  
-  if (records.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="13" class="text-center">Tidak ada data</td></tr>';
+function showNotification(message, type = 'success') {
+  notification.innerHTML = message;
+  notification.className = `notification ${type}`;
+  notification.style.display = 'block';
+  setTimeout(() => notification.style.display = 'none', 3000);
+}
+
+// ------------------ RENDER ------------------
+function renderMaintenanceTable(data) {
+  if (!data.length) {
+    maintenanceTableBody.innerHTML = `<tr><td colspan="13" class="text-center">Tidak ada data</td></tr>`;
     return;
   }
-  
-  // Sort by date descending
-  records.sort((a, b) => new Date(b.failureStart || 0) - new Date(a.failureStart || 0));
-  
-  let html = "";
-  records.forEach((record, index) => {
-    const formatDate = (dateStr) => {
-      if (!dateStr) return '-';
-      return new Date(dateStr).toLocaleString('id-ID');
-    };
-    
-    html += `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${record.machineName || '-'}</td>
-        <td>${record.category || '-'}</td>
-        <td>${formatDate(record.operationStart)}</td>
-        <td>${formatDate(record.failureStart)}</td>
-        <td>${formatDate(record.maintenanceStart)}</td>
-        <td>${formatDate(record.maintenanceEnd)}</td>
-        <td>${record.responseTime ? record.responseTime.toFixed(2) + ' jam' : '-'}</td>
-        <td>${record.repairTime ? record.repairTime.toFixed(2) + ' jam' : '-'}</td>
-        <td>${record.operatingTime ? record.operatingTime.toFixed(2) + ' jam' : '-'}</td>
-        <td>${record.downtimeTotal ? record.downtimeTotal.toFixed(2) + ' jam' : (record.downtimeHours ? record.downtimeHours.toFixed(2) + ' jam' : '-')}</td>
-        <td>${record.note || '-'}</td>
-        <td>
-          <button class="delete-btn" onclick="deleteRecord('${record.id}')" title="Hapus">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `;
-  });
-  
-  tbody.innerHTML = html;
+  maintenanceTableBody.innerHTML = data.map((row, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${row.mesin}</td>
+      <td>${row.kategori}</td>
+      <td>${row.operasiMulai}</td>
+      <td>${row.waktuRusak}</td>
+      <td>${row.mulaiPerbaikan}</td>
+      <td>${row.selesaiPerbaikan}</td>
+      <td>${row.responseTime}</td>
+      <td>${row.repairTime}</td>
+      <td>${row.operatingTime}</td>
+      <td>${row.totalDowntime}</td>
+      <td>${row.catatan}</td>
+      <td><button class="btn-small btn-outline" onclick="alert('Detail/Edit belum diimplementasikan')">Detail</button></td>
+    </tr>
+  `).join('');
 }
 
-// ================= RENDER COMPONENT TABLE =================
-function renderComponentTable(components) {
-  const tbody = document.getElementById("componentTableBody");
-  if (!tbody) return;
-  
-  if (components.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data komponen</td></tr>';
+function renderComponentTable(data) {
+  if (!data.length) {
+    componentTableBody.innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>`;
     return;
   }
-  
-  components.sort((a, b) => new Date(b.replacementDate || 0) - new Date(a.replacementDate || 0));
-  
-  let html = "";
-  components.forEach((comp, index) => {
-    html += `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${comp.componentName || '-'}</td>
-        <td>${comp.installDate ? new Date(comp.installDate).toLocaleDateString('id-ID') : '-'}</td>
-        <td>${comp.replacementDate ? new Date(comp.replacementDate).toLocaleDateString('id-ID') : '-'}</td>
-        <td>${comp.lifespanHours ? comp.lifespanHours.toFixed(2) + ' jam' : '-'}</td>
-        <td>${comp.lifespanHours ? comp.lifespanHours.toFixed(2) + ' jam' : '-'}</td>
-        <td>${comp.note || '-'}</td>
-        <td>
-          <button class="delete-btn" onclick="deleteComponent('${comp.id}')" title="Hapus">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `;
-  });
-  
-  tbody.innerHTML = html;
+  componentTableBody.innerHTML = data.map((row, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${row.komponen}</td>
+      <td>${row.tanggalPasang}</td>
+      <td>${row.tanggalGanti}</td>
+      <td>${row.umur}</td>
+      <td>${row.mttf}</td>
+      <td>${row.catatan}</td>
+      <td><button class="btn-small btn-outline" onclick="alert('Detail/Edit belum diimplementasikan')">Detail</button></td>
+    </tr>
+  `).join('');
 }
 
-// ================= DELETE FUNCTIONS =================
-window.deleteRecord = function(id) {
-  if (confirm("Yakin ingin menghapus data ini?")) {
-    showLoading(true);
-    
-    const recordRef = ref(db, `area/${currentArea}/records/${id}`);
-    remove(recordRef)
-      .then(() => {
-        showNotification("Data berhasil dihapus", "success");
-        loadData();
-      })
-      .catch(error => {
-        console.error("Error deleting:", error);
-        showNotification("Gagal menghapus: " + error.message, "error");
-        showLoading(false);
-      });
-  }
-}
-
-window.deleteComponent = function(id) {
-  if (confirm("Yakin ingin menghapus komponen ini?")) {
-    showLoading(true);
-    
-    const compRef = ref(db, `area/${currentArea}/components/${id}`);
-    remove(compRef)
-      .then(() => {
-        showNotification("Komponen berhasil dihapus", "success");
-        loadData();
-      })
-      .catch(error => {
-        console.error("Error deleting:", error);
-        showNotification("Gagal menghapus: " + error.message, "error");
-        showLoading(false);
-      });
-  }
-}
-
-// ================= FILTER FUNCTIONS =================
+// ------------------ FILTER ------------------
 function applyFilters() {
-  const dateFilter = document.getElementById("filterDate")?.value;
-  const monthFilter = document.getElementById("filterMonth")?.value;
-  const yearFilter = document.getElementById("filterYear")?.value;
-  const categoryFilter = document.getElementById("filterCategory")?.value;
-  const machineFilter = document.getElementById("filterMachine")?.value?.toLowerCase();
-  
-  let filtered = [...allRecords];
-  
-  if (dateFilter) {
-    filtered = filtered.filter(r => {
-      const recordDate = r.failureStart ? r.failureStart.split('T')[0] : '';
-      return recordDate === dateFilter;
+  showLoading();
+  setTimeout(() => { // simulate loading
+    let filteredMaintenance = maintenanceData.filter(row => {
+      const rowDate = new Date(row.waktuRusak);
+      if (filterDate.value && rowDate.toISOString().slice(0,10) !== filterDate.value) return false;
+      if (filterMonth.value) {
+        const [year, month] = filterMonth.value.split('-');
+        if (rowDate.getFullYear() != year || rowDate.getMonth()+1 != month) return false;
+      }
+      if (filterYear.value && rowDate.getFullYear() != filterYear.value) return false;
+      if (filterCategory.value && row.kategori !== filterCategory.value) return false;
+      if (filterMachine.value && !row.mesin.toLowerCase().includes(filterMachine.value.toLowerCase())) return false;
+      return true;
     });
-  }
-  
-  if (monthFilter) {
-    filtered = filtered.filter(r => {
-      const recordDate = r.failureStart ? r.failureStart.substring(0, 7) : '';
-      return recordDate === monthFilter;
+
+    let filteredComponents = componentData.filter(row => {
+      const rowDate = new Date(row.tanggalGanti);
+      if (filterDate.value && rowDate.toISOString().slice(0,10) !== filterDate.value) return false;
+      if (filterMonth.value) {
+        const [year, month] = filterMonth.value.split('-');
+        if (rowDate.getFullYear() != year || rowDate.getMonth()+1 != month) return false;
+      }
+      if (filterYear.value && rowDate.getFullYear() != filterYear.value) return false;
+      return true;
     });
-  }
-  
-  if (yearFilter) {
-    filtered = filtered.filter(r => {
-      const recordYear = r.failureStart ? r.failureStart.substring(0, 4) : '';
-      return recordYear === yearFilter;
-    });
-  }
-  
-  if (categoryFilter) {
-    filtered = filtered.filter(r => r.category === categoryFilter);
-  }
-  
-  if (machineFilter) {
-    filtered = filtered.filter(r => 
-      r.machineName && r.machineName.toLowerCase().includes(machineFilter)
-    );
-  }
-  
-  renderMaintenanceTable(filtered);
-  updateResultCount(filtered.length);
+
+    renderMaintenanceTable(filteredMaintenance);
+    renderComponentTable(filteredComponents);
+    filterResultCount.textContent = `Menampilkan ${filteredMaintenance.length} data maintenance & ${filteredComponents.length} data komponen`;
+    showLoading(false);
+  }, 300);
 }
 
 function resetFilters() {
-  document.getElementById("filterDate").value = "";
-  document.getElementById("filterMonth").value = "";
-  document.getElementById("filterYear").value = "";
-  document.getElementById("filterCategory").value = "";
-  document.getElementById("filterMachine").value = "";
-  
-  renderMaintenanceTable(allRecords);
-  updateResultCount(allRecords.length);
+  filterDate.value = '';
+  filterMonth.value = '';
+  filterYear.value = '';
+  filterCategory.value = '';
+  filterMachine.value = '';
+  applyFilters();
 }
 
-function updateResultCount(count) {
-  const el = document.getElementById("filterResultCount");
-  if (el) {
-    el.innerText = `${count} data ditemukan`;
-  }
+// ------------------ EXPORT EXCEL ------------------
+function exportTableToExcel(tableId, filename = 'data.xlsx') {
+  const table = document.getElementById(tableId);
+  const wb = XLSX.utils.table_to_book(table, {sheet:"Sheet1"});
+  XLSX.writeFile(wb, filename);
 }
 
-// ================= EXPORT TO EXCEL =================
-function exportToExcel(data, type) {
-  if (data.length === 0) {
-    alert("Tidak ada data untuk diexport");
-    return;
-  }
-  
-  let exportData;
-  if (type === "maintenance") {
-    exportData = data.map(r => ({
-      Mesin: r.machineName || '-',
-      Kategori: r.category || '-',
-      'Operasi Mulai': r.operationStart ? new Date(r.operationStart).toLocaleString('id-ID') : '-',
-      'Waktu Rusak': r.failureStart ? new Date(r.failureStart).toLocaleString('id-ID') : '-',
-      'Mulai Perbaikan': r.maintenanceStart ? new Date(r.maintenanceStart).toLocaleString('id-ID') : '-',
-      'Selesai Perbaikan': r.maintenanceEnd ? new Date(r.maintenanceEnd).toLocaleString('id-ID') : '-',
-      'Response Time (jam)': r.responseTime || 0,
-      'Repair Time (jam)': r.repairTime || 0,
-      'Operating Time (jam)': r.operatingTime || 0,
-      'Total Downtime (jam)': r.downtimeTotal || r.downtimeHours || 0,
-      Catatan: r.note || '-'
-    }));
-  } else {
-    exportData = data.map(c => ({
-      Komponen: c.componentName || '-',
-      'Tanggal Pasang': c.installDate || '-',
-      'Tanggal Ganti': c.replacementDate || '-',
-      'Umur (jam)': c.lifespanHours || 0,
-      'MTTF (jam)': c.lifespanHours || 0,
-      Catatan: c.note || '-'
-    }));
-  }
-  
-  if (typeof XLSX !== 'undefined') {
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, type);
-    XLSX.writeFile(wb, `${type}_${currentArea}_${new Date().toISOString().split('T')[0]}.xlsx`);
-  } else {
-    alert("Library Excel tidak tersedia");
-  }
-}
+// ------------------ EVENTS ------------------
+applyFilter.addEventListener('click', applyFilters);
+resetAllFilters.addEventListener('click', resetFilters);
+exportMaintenance.addEventListener('click', () => exportTableToExcel('maintenanceTable','MaintenanceHistory.xlsx'));
+exportComponents.addEventListener('click', () => exportTableToExcel('componentTable','ComponentHistory.xlsx'));
 
-// ================= UTILITIES =================
-function showLoading(show) {
-  const overlay = document.getElementById("loadingOverlay");
-  if (overlay) {
-    overlay.style.display = show ? "flex" : "none";
-  }
-}
-
-function showNotification(message, type = "info") {
-  const notification = document.getElementById("notification");
-  if (!notification) return;
-  
-  notification.className = `notification ${type}`;
-  notification.innerHTML = message;
-  notification.style.display = "block";
-  
-  setTimeout(() => {
-    notification.style.display = "none";
-  }, 3000);
-}
+// ------------------ INIT ------------------
+window.addEventListener('DOMContentLoaded', () => {
+  renderMaintenanceTable(maintenanceData);
+  renderComponentTable(componentData);
+});
