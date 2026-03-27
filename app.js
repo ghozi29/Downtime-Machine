@@ -13,10 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
   loadData();
 });
 
+// ================= LOAD DATA =================
 function loadData() {
   showLoading(true);
 
-  // 🔥 FIX: langsung ke root (BUKAN area/)
   onValue(ref(db, "records"), snap => {
     records = [];
     snap.forEach(c => records.push(c.val()));
@@ -35,6 +35,29 @@ function loadData() {
   }, { onlyOnce: true });
 }
 
+// ================= HELPER =================
+function getDowntime(r) {
+  if (!r.timestamps?.failureStart || !r.timestamps?.maintenanceEnd) return 0;
+
+  const start = new Date(r.timestamps.failureStart);
+  const end = new Date(r.timestamps.maintenanceEnd);
+
+  if (isNaN(start) || isNaN(end)) return 0;
+
+  return (end - start) / (1000 * 60 * 60); // jam
+}
+
+function getOperating(r) {
+  if (!r.timestamps?.operationStart || !r.timestamps?.failureStart) return 0;
+
+  const start = new Date(r.timestamps.operationStart);
+  const end = new Date(r.timestamps.failureStart);
+
+  if (isNaN(start) || isNaN(end)) return 0;
+
+  return (end - start) / (1000 * 60 * 60); // jam
+}
+
 // ================= KPI =================
 function computeKPI() {
   let totalRepair = 0;
@@ -42,10 +65,12 @@ function computeKPI() {
   let totalDowntime = 0;
 
   records.forEach(r => {
-    if (r.downtimeTotal) {
-      totalDowntime += r.downtimeTotal;
-      totalRepair += r.downtimeTotal;
-    }
+    const downtime = getDowntime(r);
+    const operating = getOperating(r);
+
+    totalDowntime += downtime;
+    totalRepair += downtime;
+    totalOperating += operating;
   });
 
   const MTTR = records.length ? totalRepair / records.length : 0;
@@ -55,13 +80,15 @@ function computeKPI() {
   components.forEach(c => totalLife += c.lifespanHours || 0);
   const MTTF = components.length ? totalLife / components.length : 0;
 
-  const availability = totalDowntime ? 100 - (totalDowntime / 100) : 100;
+  const availability = (totalOperating + totalDowntime)
+    ? (totalOperating / (totalOperating + totalDowntime)) * 100
+    : 100;
 
   document.getElementById("mttr").innerText = MTTR.toFixed(2);
   document.getElementById("mtbf").innerText = MTBF.toFixed(2);
   document.getElementById("mttf").innerText = MTTF.toFixed(2);
   document.getElementById("availability").innerText = availability.toFixed(2) + "%";
-  document.getElementById("totalDowntime").innerText = totalDowntime;
+  document.getElementById("totalDowntime").innerText = totalDowntime.toFixed(2);
   document.getElementById("totalBreakdown").innerText = records.length;
 }
 
@@ -96,6 +123,7 @@ function renderCharts() {
   renderPareto();
 }
 
+// PIE
 function renderPie() {
   const ctx = document.getElementById("pieChart").getContext("2d");
 
@@ -116,13 +144,14 @@ function renderPie() {
   });
 }
 
+// BAR (downtime per machine)
 function renderBar() {
   const ctx = document.getElementById("barChart").getContext("2d");
 
   const data = {};
   records.forEach(r => {
     const m = r.machineName || "Unknown";
-    data[m] = (data[m] || 0) + (r.downtimeTotal || 0);
+    data[m] = (data[m] || 0) + getDowntime(r);
   });
 
   if (charts.bar) charts.bar.destroy();
@@ -136,13 +165,21 @@ function renderBar() {
   });
 }
 
+// LINE (per bulan)
 function renderLine() {
   const ctx = document.getElementById("lineChart").getContext("2d");
 
   const data = {};
+
   records.forEach(r => {
-    const key = new Date(r.createdAt).toISOString().slice(0,7);
-    data[key] = (data[key] || 0) + (r.downtimeTotal || 0);
+    if (!r.timestamps?.failureStart) return;
+
+    const date = new Date(r.timestamps.failureStart);
+    if (isNaN(date)) return;
+
+    const key = date.toISOString().slice(0,7);
+
+    data[key] = (data[key] || 0) + 1;
   });
 
   if (charts.line) charts.line.destroy();
@@ -156,13 +193,14 @@ function renderLine() {
   });
 }
 
+// PARETO
 function renderPareto() {
   const ctx = document.getElementById("paretoChart").getContext("2d");
 
   const data = {};
   records.forEach(r => {
     const m = r.machineName || "Unknown";
-    data[m] = (data[m] || 0) + (r.downtimeTotal || 0);
+    data[m] = (data[m] || 0) + getDowntime(r);
   });
 
   const sorted = Object.entries(data).sort((a,b)=>b[1]-a[1]);
