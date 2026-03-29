@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
   <div class="container">
     <!-- SIDEBAR -->
@@ -25,19 +27,21 @@
           <i class="fas fa-history"></i> History
         </a>
         <a href="assistant.html">
-  <i class="fas fa-robot"></i> Assistant AI
-</a>
+          <i class="fas fa-robot"></i> Assistant AI
+        </a>
 
-<a href="dashboard-workload.html">
-  <i class="fas fa-tasks"></i> Beban Kerja
-</a>
+        <a href="dashboard-workload.html">
+          <i class="fas fa-tasks"></i> Beban Kerja
+        </a>
       </nav>
       <div class="sidebar-footer">
         <select id="areaSelect" class="area-select">
           <option value="all">Semua Area</option>
-          <option value="hormon">Area Hormon</option>
-          <option value="produksi1">Area Produksi 1</option>
-          <option value="produksi2">Area Produksi 2</option>
+          <option value="injeksi">Area Injeksi</option>
+          <option value="implant">Area Implant</option>
+          <option value="tablet-hormon">Area Tablet Hormon</option>
+          <option value="tablet-non-hormon">Area Tablet Non-Hormon</option>
+          <option value="qc">Area QC</option>
         </select>
       </div>
     </div>
@@ -51,18 +55,44 @@
 
       <!-- KPI CARDS -->
       <div class="kpi-row">
-        <div class="kpi-card"><div class="kpi-icon blue"><i class="fas fa-tools"></i></div><div class="kpi-content"><span class="kpi-label">MTTR</span><span class="kpi-value" id="mttr">0</span><small>Rata-rata waktu perbaikan</small></div></div>
-        <div class="kpi-card"><div class="kpi-icon green"><i class="fas fa-clock"></i></div><div class="kpi-content"><span class="kpi-label">MTBF</span><span class="kpi-value" id="mtbf">0</span><small>Rata-rata waktu antar kerusakan</small></div></div>
-        <div class="kpi-card"><div class="kpi-icon orange"><i class="fas fa-hourglass-end"></i></div><div class="kpi-content"><span class="kpi-label">MTTF</span><span class="kpi-value" id="mttf">0</span><small>Rata-rata umur komponen</small></div></div>
-        <div class="kpi-card"><div class="kpi-icon purple"><i class="fas fa-check-circle"></i></div><div class="kpi-content"><span class="kpi-label">Availability</span><span class="kpi-value" id="availability">0%</span><small>Ketersediaan mesin</small></div></div>
-        <div class="kpi-card"><div class="kpi-icon red"><i class="fas fa-hourglass-half"></i></div><div class="kpi-content"><span class="kpi-label">Total Downtime</span><span class="kpi-value" id="totalDowntime">0</span><small>Jam mesin mati</small></div></div>
-        <div class="kpi-card"><div class="kpi-icon dark"><i class="fas fa-exclamation-triangle"></i></div><div class="kpi-content"><span class="kpi-label">Total Breakdown</span><span class="kpi-value" id="totalBreakdown">0</span><small>Jumlah kejadian rusak</small></div></div>
+        <div class="kpi-card">
+          <div class="kpi-icon blue"><i class="fas fa-tools"></i></div>
+          <div class="kpi-content"><span class="kpi-label">MTTR</span><span class="kpi-value"
+              id="mttr">0</span><small>Rata-rata waktu perbaikan</small></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green"><i class="fas fa-clock"></i></div>
+          <div class="kpi-content"><span class="kpi-label">MTBF</span><span class="kpi-value"
+              id="mtbf">0</span><small>Rata-rata waktu antar kerusakan</small></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon orange"><i class="fas fa-hourglass-end"></i></div>
+          <div class="kpi-content"><span class="kpi-label">MTTF</span><span class="kpi-value"
+              id="mttf">0</span><small>Rata-rata umur komponen</small></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon purple"><i class="fas fa-check-circle"></i></div>
+          <div class="kpi-content"><span class="kpi-label">Availability</span><span class="kpi-value"
+              id="availability">0%</span><small>Ketersediaan mesin</small></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red"><i class="fas fa-hourglass-half"></i></div>
+          <div class="kpi-content"><span class="kpi-label">Total Downtime</span><span class="kpi-value"
+              id="totalDowntime">0</span><small>Jam mesin mati</small></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon dark"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="kpi-content"><span class="kpi-label">Total Breakdown</span><span class="kpi-value"
+              id="totalBreakdown">0</span><small>Jumlah kejadian rusak</small></div>
+        </div>
       </div>
 
       <!-- FILTER PERIODE -->
       <div class="filter-row">
         <div class="card filter-card">
-          <div class="filter-header"><h3><i class="fas fa-calendar-alt"></i> Filter Periode</h3></div>
+          <div class="filter-header">
+            <h3><i class="fas fa-calendar-alt"></i> Filter Periode</h3>
+          </div>
           <div class="filter-options">
             <div class="filter-group">
               <label>Periode:</label>
@@ -78,18 +108,27 @@
             </div>
             <div class="filter-group">
               <label>&nbsp;</label>
-              <button id="applyPeriodFilter" class="btn-primary"><i class="fas fa-sync-alt"></i> Update Dashboard</button>
-              </div>
+              <button id="applyPeriodFilter" class="btn-primary"><i class="fas fa-sync-alt"></i> Update
+                Dashboard</button>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- CHARTS -->
       <div class="chart-grid">
-        <div class="card chart-card"><h3><i class="fas fa-chart-pie"></i> Breakdown by Category</h3><canvas id="pieChart"></canvas></div>
-        <div class="card chart-card"><h3><i class="fas fa-chart-bar"></i> Downtime per Machine</h3><canvas id="barChart"></canvas></div>
-        <div class="card chart-card"><h3><i class="fas fa-chart-line"></i> Trend Downtime Bulanan</h3><canvas id="lineChart"></canvas></div>
-        <div class="card chart-card"><h3><i class="fas fa-trophy"></i> Mesin Terburuk</h3><canvas id="rankChart"></canvas></div>
+        <div class="card chart-card">
+          <h3><i class="fas fa-chart-pie"></i> Breakdown by Category</h3><canvas id="pieChart"></canvas>
+        </div>
+        <div class="card chart-card">
+          <h3><i class="fas fa-chart-bar"></i> Downtime per Machine</h3><canvas id="barChart"></canvas>
+        </div>
+        <div class="card chart-card">
+          <h3><i class="fas fa-chart-line"></i> Trend Downtime Bulanan</h3><canvas id="lineChart"></canvas>
+        </div>
+        <div class="card chart-card">
+          <h3><i class="fas fa-trophy"></i> Mesin Terburuk</h3><canvas id="rankChart"></canvas>
+        </div>
       </div>
 
       <!-- TABEL RINGKASAN -->
@@ -98,23 +137,37 @@
         <div class="table-responsive">
           <table class="compact-table">
             <thead>
-              <tr><th>Komponen</th><th>Jumlah Data</th><th>Rata-rata Umur (MTTF)</th><th>Total Jam Operasi</th></tr>
+              <tr>
+                <th>Komponen</th>
+                <th>Jumlah Data</th>
+                <th>Rata-rata Umur (MTTF)</th>
+                <th>Total Jam Operasi</th>
+              </tr>
             </thead>
-            <tbody id="mttfTableBody"><tr><td colspan="4" class="text-center">Memuat data...</td></tr></tbody>
+            <tbody id="mttfTableBody">
+              <tr>
+                <td colspan="4" class="text-center">Memuat data...</td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>
     </div>
-    </div>
+  </div>
 
-   
+
   <!-- LOADING OVERLAY -->
-  <div id="loadingOverlay" class="loading-overlay" style="display:none;"><div class="spinner"></div><p>Memuat data...</p></div>
+  <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <p>Memuat data...</p>
+  </div>
 
   <!-- NOTIFICATION -->
-  <div id="notification" class="notification" style="position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;"></div>
+  <div id="notification" class="notification"
+    style="position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;"></div>
 
- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script type="module" src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
+
 </html>
